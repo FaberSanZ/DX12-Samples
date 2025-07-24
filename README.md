@@ -1,4 +1,4 @@
-##               DirectX 12 Ultimate® [DX12®]([)) Samples
+##               DirectX 12 Ultimate® Samples
 
   
 </h1>
