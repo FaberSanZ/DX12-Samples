@@ -19,4 +19,6 @@ This is designed for the DX12 learning process, I mainly use it to experiment wi
 
 Example | Details
 ---------|--------
-<img src="Screenshots/ClearScreen.png" width=380> | [Clear Screen](Src/ClearScreen)<br> This example shows how to configure the device and clear the color.
+<img src="Screenshots/ClearScreen.png" width=380> | [Clear Screen](Src/ClearScreen)<br> This sample shows how to initialize DirectX 12, select a GPU (adapter), create a device, a command queue, a swap chain, a render target view (RTV) descriptor heap, and a command list to clear the screen to a solid color.
+All rendering commands are recorded into the command list, then executed through the command queue.
+If you pass nullptr when choosing the adapter, the default GPU (usually GPU 0) is selected.
