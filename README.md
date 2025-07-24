@@ -1,30 +1,22 @@
+##               DirectX 12 Ultimate® [DX12®]([)) Samples
 
-<h1 align="center">
-   ObjLoader
-  <br>
-  
-  ##               ObjLoader
-  Tiny but powerful wavefront obj loader written in C#. No dependency . It can parse over 10M polygons with moderate memory and time.
   
 </h1>
 
-<hr>
 
-
-<br>
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/FaberSanZ/ObjLoader/blob/master/LICENSE)
-
-The code is licensed under MIT. Feel free to use it for whatever purpose.
-
-<hr>
-<br>
+  ##              
 
 
 
-### Based on tinyobjloader: (<https://github.com/tinyobjloader/tinyobjloader>)
+## Overview
+This is designed for the DX12 learning process, I mainly use it to experiment with graphical or computing techniques and should not be used as a cerium product as it may have memory leaks and faulty or poorly optimized implementations.
 
 
 
-<br>
 
+## Examples
+
+
+Example | Details
+---------|--------
+<img src="Screenshots/ClearScreen.png" width=380> | [Clear Screen](Src/ClearScreen)<br> This example shows how to configure the device and clear the color.
