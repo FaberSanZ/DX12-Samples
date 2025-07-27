@@ -119,15 +119,15 @@ public:
 
 
 
-        // ?????????????????????????????????
-        // ?         SwapChain            ?
-        // ?????????????????????????????????
-        //        ?????????????????????????????
-        //        ?   Buffer 0  ?   Buffer 1  ?   ? Double buffering
-        //        ?????????????????????????????
-        //            ?             ?
-        //            ?             ?? Back Buffer (visible next frame)
-        //            ?? Front Buffer (currently being presented)
+        // ┌────────────────────────────┐
+        // │         SwapChain          │
+        // └────────────────────────────┘
+        //      ┌────────┐  ┌────────┐
+        //      │Buffer 0│  │Buffer 1│   ← Double buffering
+        //      └────────┘  └────────┘
+        //         ↑           ↑
+        //   Back Buffer   Front Buffer
+        // (next frame)    (being shown)
         //
         // DXGI_SWAP_EFFECT_FLIP_DISCARD or FLIP_SEQUENTIAL (modern)
         // IDXGISwapChain::Present() swaps the buffers
@@ -155,20 +155,20 @@ public:
 
         // [RTV DESCRIPTOR HEAP] (example: 3 entries for potential triple buffering)
         //
-        // ????????????????????????????
-        // ? RTV #0 ? RTV #1 ? RTV #2 ?
-        // ????????????????????????????
-        //     ?       ?        ?
-        //     ?       ?        ?? Optional: can be used for a 3rd render target (e.g., post-process or extra framebuffer)
-        //     ?       ??????????? Used for back buffer 1
-        //     ??????????????????? Used for back buffer 0
+        // ┌────────┬────────┬────────┐
+        // │ RTV #0 │ RTV #1 │ RTV #2 │
+        // └────────┴────────┴────────┘
+        //     ↑       ↑        ↑
+        //     │       │        └─ Optional: can be used for post-process or extra framebuffer
+        //     │       └─────────── Used for back buffer 1
+        //     └──────────────────── Used for back buffer 0
         //
         // - CPU writes here using CreateRenderTargetView()
         // - GPU reads from here via OMSetRenderTargets()
         //
         // Note:
-        // - Only the RTVs corresponding to the swap chain's back buffers are required.
-        // - You can optionally add more RTVs for other render targets (offscreen passes, etc.)
+        // - Only the RTVs corresponding to the swap chain’s back buffers are required.
+        // - You can optionally add more RTVs for offscreen passes, etc.
 
 
 		// Create RTV descriptor heap
