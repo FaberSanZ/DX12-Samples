@@ -1,4 +1,4 @@
-// ClearScreen.cpp : This file contains the 'main' function. Program execution begins and ends there.
+﻿// ClearScreen.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include <Windows.h>
@@ -15,6 +15,7 @@
 class Render
 {
 private:
+
     struct RenderDevice
     {
         ID3D12Device* device = nullptr;
@@ -45,7 +46,7 @@ private:
             m_DescriptorSize = device->GetDescriptorHandleIncrementSize(type);
 		}
 
-        D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(UINT index) const
+        D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(uint32_t index) const
         {
             D3D12_CPU_DESCRIPTOR_HANDLE handle = GetCPUDescriptorHandleForHeapStart();
             handle.ptr += index * m_DescriptorSize;
@@ -61,7 +62,7 @@ private:
             return m_Heap->GetGPUDescriptorHandleForHeapStart();
         }
 
-        UINT GetDescriptorSize() const
+        uint32_t GetDescriptorSize() const
         {
             return m_DescriptorSize;
 		}
@@ -93,17 +94,15 @@ public:
 
 
 
-        // ?????????????????   ?????????????????   ?????????????????
-        // ?   GPU 0       ?   ?   GPU 1       ?   ?   GPU 2       ?
-        // ? (Integrated)  ?   ? (Dedicated)   ?   ?   (WARP/Other)?
-        // ?????????????????   ?????????????????   ?????????????????
-        //         ?                   ?                   ?
-        //         ?????????????????????????????????????????
-        //              ?                      ?
-        //     IDXGIFactory::EnumAdapters / EnumAdapters1
+        //  ┌────────────┐  ┌────────────┐  ┌────────────┐
+        //  │   GPU 0    │  │   GPU 1    │  │   GPU 2    │
+        //  │ Integrated │  │ Dedicated  │  │  WARP/etc  │
+        //  └────────────┘  └────────────┘  └────────────┘
+        //         ↑              ↑               ↑
+        //   IDXGIFactory::EnumAdapters / EnumAdapters1
         //
         // You can iterate adapters and choose manually.
-        // Passing nullptr to D3D11CreateDevice/D3D12CreateDevice
+        // Passing nullptr to D3D11CreateDevice / D3D12CreateDevice
         // means "use default adapter" (usually GPU 0).
 
         D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&renderDevice.device));
@@ -175,7 +174,7 @@ public:
 		// Create RTV descriptor heap
         rtvDescriptorHeap.Initialize(renderDevice.device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_FrameCount);
 
-        for (int i = 0; i < m_FrameCount; ++i)
+        for (uint32_t i = 0; i < m_FrameCount; ++i)
         {
             ID3D12Resource* backBuffer = nullptr;
             renderDevice.swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer));
@@ -231,7 +230,7 @@ public:
 
     void Cleanup()
     {
-        for (int i = 0; i < 2; ++i)
+        for (uint32_t i = 0; i < 2; ++i)
             if (renderDevice.renderTargets[i])
                 renderDevice.renderTargets[i]->Release();
 
@@ -268,7 +267,10 @@ int main()
 
     WNDCLASSEX wcex = { sizeof(WNDCLASSEX), CS_CLASSDC, DefWindowProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, title, nullptr };
     RegisterClassEx(&wcex);
+
+	// Create a window
     HWND hWnd = CreateWindow(title, title, WS_OVERLAPPEDWINDOW, 100, 100, width, height, nullptr, nullptr, wcex.hInstance, nullptr);
+
     ShowWindow(hWnd, SW_SHOW);
 
     if (!render.Initialize(hWnd, width, height))
