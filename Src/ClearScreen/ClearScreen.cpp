@@ -93,17 +93,18 @@ public:
         CreateDXGIFactory1(IID_PPV_ARGS(&factory));
 
 
+        /*
+            +----------------+    +----------------+    +----------------+
+            |    GPU 0       |    |    GPU 1       |    |    GPU 2       |
+            |  Integrated    |    |   Dedicated    |    |   WARP/etc     |
+            +----------------+    +----------------+    +----------------+
+                   ↑                    ↑                      ↑
+             IDXGIFactory::EnumAdapters / EnumAdapters1
 
-        //  ┌────────────┐  ┌────────────┐  ┌────────────┐
-        //  │   GPU 0    │  │   GPU 1    │  │   GPU 2    │
-        //  │ Integrated │  │ Dedicated  │  │  WARP/etc  │
-        //  └────────────┘  └────────────┘  └────────────┘
-        //         ↑              ↑               ↑
-        //   IDXGIFactory::EnumAdapters / EnumAdapters1
-        //
-        // You can iterate adapters and choose manually.
-        // Passing nullptr to D3D11CreateDevice / D3D12CreateDevice
-        // means "use default adapter" (usually GPU 0).
+            You can iterate adapters and choose manually.
+            Passing nullptr to D3D11CreateDevice / D3D12CreateDevice
+            means "use default adapter" (usually GPU 0).
+        */
 
         D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&renderDevice.device));
 
@@ -118,22 +119,23 @@ public:
 
 
 
+        /*
+            +----------------------------+
+            |        SwapChain          |
+            +----------------------------+
+                 +----------+ +----------+
+                 | Buffer 0 | | Buffer 1 |   <- Double buffering
+                 +----------+ +----------+
+                      ^            ^
+                Back Buffer    Front Buffer
+               (next frame)    (being shown)
 
-        // ┌────────────────────────────┐
-        // │         SwapChain          │
-        // └────────────────────────────┘
-        //      ┌────────┐  ┌────────┐
-        //      │Buffer 0│  │Buffer 1│   ← Double buffering
-        //      └────────┘  └────────┘
-        //         ↑           ↑
-        //   Back Buffer   Front Buffer
-        // (next frame)    (being shown)
-        //
-        // DXGI_SWAP_EFFECT_FLIP_DISCARD or FLIP_SEQUENTIAL (modern)
-        // IDXGISwapChain::Present() swaps the buffers
-        //
-        // You can increase buffer count (e.g., triple buffering)
-        // by setting BufferCount = 3+ in SwapChainDesc.
+            DXGI_SWAP_EFFECT_FLIP_DISCARD or FLIP_SEQUENTIAL (modern)
+            IDXGISwapChain::Present() swaps the buffers
+
+            You can increase buffer count (e.g., triple buffering)
+            by setting BufferCount = 3+ in SwapChainDesc.
+        */
 
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
         swapChainDesc.BufferCount = m_FrameCount;
@@ -153,22 +155,24 @@ public:
         factory->Release();
 
 
-        // [RTV DESCRIPTOR HEAP] (example: 3 entries for potential triple buffering)
-        //
-        // ┌────────┬────────┬────────┐
-        // │ RTV #0 │ RTV #1 │ RTV #2 │
-        // └────────┴────────┴────────┘
-        //     ↑       ↑        ↑
-        //     │       │        └─ Optional: can be used for post-process or extra framebuffer
-        //     │       └─────────── Used for back buffer 1
-        //     └──────────────────── Used for back buffer 0
-        //
-        // - CPU writes here using CreateRenderTargetView()
-        // - GPU reads from here via OMSetRenderTargets()
-        //
-        // Note:
-        // - Only the RTVs corresponding to the swap chain’s back buffers are required.
-        // - You can optionally add more RTVs for offscreen passes, etc.
+        /*
+           [RTV DESCRIPTOR HEAP] (example: 3 entries for potential triple buffering)
+
+           +--------+--------+--------+
+           | RTV #0 | RTV #1 | RTV #2 |
+           +--------+--------+--------+
+              ^        ^         ^
+              |        |         +-- Optional: can be used for post-process or extra framebuffer
+              |        +------------ Used for back buffer 1
+              +--------------------- Used for back buffer 0
+
+           - CPU writes here using CreateRenderTargetView()
+           - GPU reads from here via OMSetRenderTargets()
+
+           Note:
+           - Only the RTVs corresponding to the swap chain’s back buffers are required.
+           - You can optionally add more RTVs for offscreen passes, etc.
+       */
 
 
 		// Create RTV descriptor heap
@@ -187,6 +191,36 @@ public:
             renderDevice.renderTargets[i] = backBuffer;
         }
 
+
+
+
+        /*
+            +--------------------+
+            |  Command Allocator |
+            +--------------------+
+                     |
+                     v
+            +------------------+
+            |  Command List    |
+            +------------------+
+                     |
+                     v
+            +--------------------------+
+            | ClearRenderTargetView()  |
+            | Draw()                   |
+            | Copy()                   |
+            | Dispatch()               |
+			| Etc...                   |
+            +--------------------------+
+                     |
+                     v
+            +------------------+
+            | Close()          |
+            +------------------+
+                     |
+                     v
+            ExecuteCommandLists()
+        */
 
         renderDevice.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&renderDevice.commandAlloc));
         renderDevice.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, renderDevice.commandAlloc, nullptr, IID_PPV_ARGS(&renderDevice.commandList));
