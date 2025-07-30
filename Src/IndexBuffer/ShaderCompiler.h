@@ -73,10 +73,7 @@ namespace Core
 		IDxcCompiler* compiler = nullptr;
 		IDxcLibrary* library = nullptr;
 		IDxcUtils* utils = nullptr;
-		//IDxcOperationResult* result = nullptr;
-
 	};
 
 
 }
-
