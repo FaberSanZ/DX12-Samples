@@ -1,12 +1,12 @@
-﻿// ClearScreen.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// VertexBuffer.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-
 #include <Windows.h>
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <tchar.h>
 #include <iostream>
 #include <d3dcompiler.h>
+#include "ShaderCompiler.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -27,6 +27,67 @@ private:
 
     } renderDevice;
 
+    struct Pipeline
+    {
+        ID3D12PipelineState* pipelineState = nullptr;
+        ID3D12RootSignature* rootSignature = nullptr;
+        Core::ShaderCompilerDXC shaderCompiler {};
+
+        void Initialize(ID3D12Device* device)
+        {
+            auto vertexShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/Pipeline/VertexShader.hlsl", L"VS", L"vs_6_0");
+            auto pixelShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/Pipeline/PixelShader.hlsl", L"PS", L"ps_6_0");
+
+
+            D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
+            rootSigDesc.NumParameters = 0;
+            rootSigDesc.pParameters = nullptr;
+            rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+            ID3DBlob* sigBlob = nullptr;
+            ID3DBlob* errorBlob = nullptr;
+
+            D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errorBlob);
+            device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
+
+            // --- PIPELINE STATE ---
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+            psoDesc.pRootSignature = rootSignature;
+
+            psoDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+            psoDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+
+            // Rasterizer state manual
+            D3D12_RASTERIZER_DESC rasterizerDesc = {};
+            rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+            rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+            rasterizerDesc.FrontCounterClockwise = FALSE;
+            rasterizerDesc.DepthClipEnable = TRUE;
+            psoDesc.RasterizerState = rasterizerDesc;
+
+            // Blend state manual
+            D3D12_BLEND_DESC blendDesc = {};
+            blendDesc.AlphaToCoverageEnable = FALSE;
+            blendDesc.IndependentBlendEnable = FALSE;
+            blendDesc.RenderTarget[0].BlendEnable = FALSE;
+            blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+            psoDesc.BlendState = blendDesc;
+
+            // Depth stencil
+            psoDesc.DepthStencilState.DepthEnable = FALSE;
+            psoDesc.DepthStencilState.StencilEnable = FALSE;
+
+
+            psoDesc.SampleMask = UINT_MAX;
+            psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+            psoDesc.NumRenderTargets = 1;
+            psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+            psoDesc.SampleDesc.Count = 1;
+
+            device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
+        }
+    } pipeline;
+
     class DescriptorHeap
     {
     public:
@@ -44,7 +105,7 @@ private:
             heapDesc.NodeMask = 0;
             device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_Heap));
             m_DescriptorSize = device->GetDescriptorHandleIncrementSize(type);
-		}
+        }
 
         D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(uint32_t index) const
         {
@@ -65,7 +126,7 @@ private:
         uint32_t GetDescriptorSize() const
         {
             return m_DescriptorSize;
-		}
+        }
 
         void Destroy()
         {
@@ -74,7 +135,7 @@ private:
                 m_Heap->Release();
                 m_Heap = nullptr;
             }
-		}
+        }
     };
 
 public:
@@ -87,8 +148,8 @@ public:
 
     bool Initialize(HWND hwnd, uint32_t width, uint32_t Heigh)
     {
-		m_Width = width;
-		m_Height = Heigh;
+        m_Width = width;
+        m_Height = Heigh;
         IDXGIFactory4* factory = nullptr;
         CreateDXGIFactory1(IID_PPV_ARGS(&factory));
 
@@ -98,7 +159,7 @@ public:
             |    GPU 0       |    |    GPU 1       |    |    GPU 2       |
             |  Integrated    |    |   Dedicated    |    |   WARP/etc     |
             +----------------+    +----------------+    +----------------+
-                   ↑                    ↑                      ↑
+                   ?                    ?                      ?
              IDXGIFactory::EnumAdapters / EnumAdapters1
 
             You can iterate adapters and choose manually.
@@ -110,7 +171,7 @@ public:
 
 
 
-        
+
         D3D12_COMMAND_QUEUE_DESC queueDesc = {};
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -170,12 +231,12 @@ public:
            - GPU reads from here via OMSetRenderTargets()
 
            Note:
-           - Only the RTVs corresponding to the swap chain’s back buffers are required.
+           - Only the RTVs corresponding to the swap chain�s back buffers are required.
            - You can optionally add more RTVs for offscreen passes, etc.
        */
 
 
-		// Create RTV descriptor heap
+       // Create RTV descriptor heap
         rtvDescriptorHeap.Initialize(renderDevice.device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_FrameCount);
 
         for (uint32_t i = 0; i < m_FrameCount; ++i)
@@ -210,7 +271,7 @@ public:
             | Draw()                   |
             | Copy()                   |
             | Dispatch()               |
-			| Etc...                   |
+            | Etc...                   |
             +--------------------------+
                      |
                      v
@@ -227,37 +288,52 @@ public:
 
         renderDevice.commandList->Close();
 
+
+        pipeline.Initialize(renderDevice.device);
+
         return true;
     }
 
 
     void Loop()
     {
-		// get the current back buffer index
-		uint32_t backBufferIndex = renderDevice.swapChain->GetCurrentBackBufferIndex();
+        // get the current back buffer index
+        uint32_t backBufferIndex = renderDevice.swapChain->GetCurrentBackBufferIndex();
 
-		// Reset the command allocator and command list for the current frame
+        // Reset the command allocator and command list for the current frame
         renderDevice.commandAlloc->Reset();
         renderDevice.commandList->Reset(renderDevice.commandAlloc, nullptr);
 
 
 
-		// Set the render target view (RTV) for the current back bufferq
+        // Set the render target view (RTV) for the current back bufferq
         D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap.GetCPUHandle(backBufferIndex);
         renderDevice.commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
 
-		// Clear the render target
+        // Clear the render target
         float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
         renderDevice.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+        // Set the viewport and scissor rect
+        D3D12_VIEWPORT view = { 0, 0, m_Width, m_Height, 0.0f, 1.0f };
+        D3D12_RECT scissorRect = { 0, 0, m_Width, m_Height };
+
+        renderDevice.commandList->RSSetViewports(1, &view);
+        renderDevice.commandList->RSSetScissorRects(1, &scissorRect);
+
+        // draw the triangle
+        renderDevice.commandList->SetPipelineState(pipeline.pipelineState);
+        renderDevice.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        renderDevice.commandList->DrawInstanced(3, 1, 0, 0);
 
 
         renderDevice.commandList->Close();
 
-		// Execute the command list
+        // Execute the command list
         ID3D12CommandList* ppCommandLists[] = { renderDevice.commandList };
         renderDevice.commandQueue->ExecuteCommandLists(1, ppCommandLists);
 
-		// Present the frame
+        // Present the frame
         renderDevice.swapChain->Present(1, 0);
     }
 
@@ -291,9 +367,9 @@ public:
 
 int main()
 {
-	uint32_t width = 1280;
-	uint32_t height = 820;
-    const wchar_t title[] = L"DX12 ClearScreen";
+    uint32_t width = 1280;
+    uint32_t height = 820;
+    const wchar_t title[] = L"DX12 VertexBuffer";
 
     Render render {};
 
@@ -302,7 +378,7 @@ int main()
     WNDCLASSEX wcex = { sizeof(WNDCLASSEX), CS_CLASSDC, DefWindowProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, title, nullptr };
     RegisterClassEx(&wcex);
 
-	// Create a window
+    // Create a window
     HWND hWnd = CreateWindow(title, title, WS_OVERLAPPEDWINDOW, 100, 100, width, height, nullptr, nullptr, wcex.hInstance, nullptr);
 
     ShowWindow(hWnd, SW_SHOW);
@@ -328,7 +404,7 @@ int main()
     }
 
 
-	render.Cleanup();
+    render.Cleanup();
 
     return 0;
 }
