@@ -141,8 +141,7 @@ public:
             swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer));
 
 
-            D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap.GetCPUDescriptorHandleForHeapStart();
-            rtvHandle.ptr += i * rtvDescriptorHeap.GetDescriptorSize();
+            D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap.GetCPUHandle(i);
             device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
 
             renderTargets[i] = backBuffer;
