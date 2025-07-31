@@ -1,5 +1,6 @@
-// BasicSynchronizing.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// Blending.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+
 
 //#include <Windows.h>
 #include <d3d12.h>
@@ -222,7 +223,7 @@ public:
         }
 
         WaitForPreviousFrame();
-	}
+    }
 
     void WaitForPreviousFrame()
     {
@@ -259,7 +260,7 @@ public:
             D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap.GetCPUHandle(i);
             device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
             renderTargets[i] = backBuffer;
-		}
+        }
 
     }
 
@@ -314,8 +315,8 @@ public:
 
     void CreatePipeline()
     {
-        auto vertexShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/BasicSync/VertexShader.hlsl", L"VS", L"vs_6_0");
-        auto pixelShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/BasicSync/PixelShader.hlsl", L"PS", L"ps_6_0");
+        auto vertexShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/Blending/VertexShader.hlsl", L"VS", L"vs_6_0");
+        auto pixelShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/Blending/PixelShader.hlsl", L"PS", L"ps_6_0");
 
 
         D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
@@ -356,21 +357,29 @@ public:
         rasterizerDesc.DepthClipEnable = true;
         psoDesc.RasterizerState = rasterizerDesc;
 
-        // Blend state manual
+
+		// Blend state
+		// This is the blend state for the pipeline. It defines how blending is done.
         D3D12_BLEND_DESC blendDesc = {};
         blendDesc.AlphaToCoverageEnable = false;
         blendDesc.IndependentBlendEnable = false;
-        blendDesc.RenderTarget[0].BlendEnable = false;
+        blendDesc.RenderTarget[0].BlendEnable = true;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+        blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+        blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
         psoDesc.BlendState = blendDesc;
 
+
+
         // Depth stencil
-
-
-
         D3D12_DEPTH_STENCIL_DESC depthStencilDesc = {};
         depthStencilDesc.DepthEnable = true;
-        depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // Set to zero to disable depth writing
         depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
         depthStencilDesc.StencilEnable = false;
 
@@ -382,7 +391,9 @@ public:
         psoDesc.SampleMask = UINT_MAX;
         psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         psoDesc.NumRenderTargets = 1;
-        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+		// Set the render target format
+        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; 
         psoDesc.SampleDesc.Count = 1;
 
         device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
@@ -400,17 +411,17 @@ public:
 
         Vertex vertices[] =
         {
-            { -0.20f, -0.55f, 0.0f, 1.0f,   0.8f, 0.2f, 0.0f, 1.0f },
-            { -0.55f,  0.55f, 0.0f, 1.0f,   0.8f, 0.2f, 0.0f, 1.0f },
-            {  0.15f,  0.55f, 0.0f, 1.0f,   0.8f, 0.2f, 0.0f, 1.0f },
+            { -0.20f, -0.55f, 0.0f, 1.0f,   1.0f, 0.2f, 0.2f, 0.1f },
+            { -0.55f,  0.55f, 0.0f, 1.0f,   1.0f, 0.2f, 0.2f, 1.0f },
+            {  0.15f,  0.55f, 0.0f, 1.0f,   1.0f, 0.2f, 0.2f, 0.5f },
 
-            {  0.00f, -0.40f, 0.0f, 1.0f,   0.3f, 1.0f, 0.3f, 1.0f },
-            { -0.35f,  0.70f, 0.0f, 1.0f,   0.3f, 1.0f, 0.3f, 1.0f },
-            {  0.35f,  0.70f, 0.0f, 1.0f,   0.3f, 1.0f, 0.3f, 1.0f },
+            {  0.00f, -0.40f, 0.0f, 1.0f,   0.2f, 1.0f, 0.2f, 0.1f },
+            { -0.35f,  0.70f, 0.0f, 1.0f,   0.2f, 1.0f, 0.2f, 1.0f },
+            {  0.35f,  0.70f, 0.0f, 1.0f,   0.2f, 1.0f, 0.2f, 0.5f },
 
-            {  0.20f, -0.55f, 0.0f, 1.0f,   0.3f, 0.3f, 1.0f, 1.0f },
-            { -0.15f,  0.55f, 0.0f, 1.0f,   0.3f, 0.3f, 1.0f, 1.0f },
-            {  0.55f,  0.55f, 0.0f, 1.0f,   0.3f, 0.3f, 1.0f, 1.0f },
+            {  0.20f, -0.70f, 0.0f, 1.0f,   0.2f, 0.2f, 1.0f, 0.1f },
+            { -0.15f,  0.40f, 0.0f, 1.0f,   0.2f, 0.2f, 1.0f, 1.0f },
+            {  0.55f,  0.40f, 0.0f, 1.0f,   0.2f, 0.2f, 1.0f, 0.5f },
         };
 
         vertexBuffer.size = sizeof(vertices);
@@ -458,10 +469,11 @@ public:
         // Define indices for a triangle
         uint32_t indices[] =
         {
-            0, 1, 2, 
-            3, 4, 5, 
-            6, 7, 8 
+            0, 1, 2,
+            3, 4, 5,
+            6, 7, 8
         };
+
         indexBuffer.size = sizeof(indices);
         indexBuffer.stride = sizeof(uint32_t);
         indexBuffer.m_indexCount = _countof(indices);
@@ -528,7 +540,7 @@ public:
 
 
         // Clear the render target
-        float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+        float clearColor[] = { 0.1f, 0.2f, 0.35f, 1.0f };
         commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 
@@ -553,8 +565,8 @@ public:
         // Present the frame
         swapChain->Present(1, 0);
 
-		// Signal and increment the fence value.
-		// This will be used to synchronize the GPU and CPU.
+        // Signal and increment the fence value.
+        // This will be used to synchronize the GPU and CPU.
         WaitForPreviousFrame();
     }
 
@@ -638,30 +650,30 @@ public:
 
 int main()
 {
-    WindowApp win = { 1280u, 720u, L"DX12 Basic Sync" };
-	win.Initialize(GetModuleHandle(nullptr));
+    WindowApp win = { 1280u, 720u, L"DX12 Blending" };
+    win.Initialize(GetModuleHandle(nullptr));
 
     Render render {};
-	render.Initialize(win.GetHWND(), win.GetWidth(), win.GetHeight());
+    render.Initialize(win.GetHWND(), win.GetWidth(), win.GetHeight());
 
 
     win.SetOnUpdate([&render]
-    {
+        {
 
-    });
+        });
 
 
     win.SetOnRender([&render]
-    {
-        render.OnRender();
-    });
+        {
+            render.OnRender();
+        });
 
 
     win.SetOnResize([&render](UINT w, UINT h)
-    {
-        std::wcout << L"[RESIZE] -> " << w << L"x" << h << std::endl;
-        render.OnResize(w, h);
-    });
+        {
+            std::wcout << L"[RESIZE] -> " << w << L"x" << h << std::endl;
+            render.OnResize(w, h);
+        });
 
 
     win.Run();
