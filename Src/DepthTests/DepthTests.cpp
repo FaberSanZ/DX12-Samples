@@ -1,4 +1,4 @@
-// IndexBuffer.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// DepthTests.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include <Windows.h>
@@ -96,6 +96,7 @@ public:
         D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
         uint32_t stride = { };
         uint32_t size = { };
+        uint32_t m_indexCount { };
 
         void Destroy()
         {
@@ -105,7 +106,7 @@ public:
                 m_indexBuffer = nullptr;
             }
         }
-	
+
     } indexBuffer;
 
 public:
@@ -123,12 +124,15 @@ public:
     ID3D12CommandAllocator* commandAlloc = nullptr;
     ID3D12GraphicsCommandList* commandList = nullptr;
 
+    ID3D12Resource* depthStencilBuffer; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
+
     // Pipeline state and root signature
     ID3D12PipelineState* pipelineState = nullptr;
     ID3D12RootSignature* rootSignature = nullptr;
     Core::ShaderCompilerDXC shaderCompiler {};
 
-    DescriptorHeap rtvDescriptorHeap {};
+	DescriptorHeap rtvDescriptorHeap {};  // This is a heap for our render target view descriptor
+    DescriptorHeap dpvDescriptorHeap {};  // This is a heap for our depth/stencil buffer descriptor
 
 
 
@@ -192,17 +196,64 @@ public:
         commandList->Close();
 
 
+        CreateDepthBuffer();
         CreatePipeline();
         CreateVertexBuffer();
-		CreateIndexBuffer();
+        CreateIndexBuffer();
         return true;
     }
+    void CreateDepthBuffer()
+    {
+		// Create depth stencil buffer
+        D3D12_RESOURCE_DESC depthStencilDesc = {};
+        depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        depthStencilDesc.Width = m_Width;
+        depthStencilDesc.Height = m_Height;
+        depthStencilDesc.DepthOrArraySize = 1;
+        depthStencilDesc.MipLevels = 1;
+        depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        depthStencilDesc.SampleDesc.Count = 1;
+        depthStencilDesc.SampleDesc.Quality = 0;
+        depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
+		// Clear value for the depth stencil buffer
+        D3D12_CLEAR_VALUE clearValue = {};
+        clearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        clearValue.DepthStencil.Depth = 1.0f;
+        clearValue.DepthStencil.Stencil = 0;
+
+
+		// Create heap properties for the depth stencil buffer
+        D3D12_HEAP_PROPERTIES heapProps = {};
+        heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+        heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        heapProps.CreationNodeMask = 1;
+        heapProps.VisibleNodeMask = 1;
+
+
+		// Create the depth stencil buffer resource
+        device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&depthStencilBuffer));
+
+		// Create descriptor heap for depth stencil view (DSV)
+		dpvDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
+
+
+		// Create the depth stencil view (DSV)
+        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+        dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+        dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+        dsvDesc.Texture2D.MipSlice = 0;
+
+        device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dpvDescriptorHeap.GetCPUHandle(0));
+    }
 
     void CreatePipeline()
     {
-        auto vertexShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/IndexBuffer/VertexShader.hlsl", L"VS", L"vs_6_0");
-        auto pixelShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/IndexBuffer/PixelShader.hlsl", L"PS", L"ps_6_0");
+        auto vertexShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/DepthTests/VertexShader.hlsl", L"VS", L"vs_6_0");
+        auto pixelShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/DepthTests/PixelShader.hlsl", L"PS", L"ps_6_0");
 
 
         D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
@@ -239,21 +290,31 @@ public:
         D3D12_RASTERIZER_DESC rasterizerDesc = {};
         rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
         rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-        rasterizerDesc.FrontCounterClockwise = FALSE;
-        rasterizerDesc.DepthClipEnable = TRUE;
+        rasterizerDesc.FrontCounterClockwise = false;
+        rasterizerDesc.DepthClipEnable = true;
         psoDesc.RasterizerState = rasterizerDesc;
 
         // Blend state manual
         D3D12_BLEND_DESC blendDesc = {};
-        blendDesc.AlphaToCoverageEnable = FALSE;
-        blendDesc.IndependentBlendEnable = FALSE;
-        blendDesc.RenderTarget[0].BlendEnable = FALSE;
+        blendDesc.AlphaToCoverageEnable = false;
+        blendDesc.IndependentBlendEnable = false;
+        blendDesc.RenderTarget[0].BlendEnable = false;
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
         psoDesc.BlendState = blendDesc;
 
         // Depth stencil
-        psoDesc.DepthStencilState.DepthEnable = FALSE;
-        psoDesc.DepthStencilState.StencilEnable = FALSE;
+  
+
+
+        D3D12_DEPTH_STENCIL_DESC depthStencilDesc = {};
+        depthStencilDesc.DepthEnable = true;
+        depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+        depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+        depthStencilDesc.StencilEnable = false;
+
+        psoDesc.DepthStencilState = depthStencilDesc;
+        psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
 
 
         psoDesc.SampleMask = UINT_MAX;
@@ -277,17 +338,17 @@ public:
 
         Vertex vertices[] =
         {
-            {  -0.5f, 0.5f, 0.0f, 1.0f, // POSITION
-                0.9f, 0.0f, 0.0f, 1.0f },     // COLOR
+            // Red Quad
+            { -0.5f,  0.5f, 0.2f, 1.0f,   1.0f, 0.0f, 0.0f, 1.0f },
+            {  0.5f, -0.5f, 0.2f, 1.0f,   1.0f, 0.0f, 0.0f, 1.0f },
+            { -0.5f, -0.5f, 0.2f, 1.0f,   1.0f, 0.0f, 0.0f, 1.0f },
+            {  0.5f,  0.5f, 0.2f, 1.0f,   1.0f, 0.0f, 0.0f, 1.0f },
 
-            {  0.5f, 0.5f, 0.0f, 1.0f,  // POSITION
-                0.0f, 0.9f, 0.0f, 1.0f,},     // COLOR
-
-            { 0.5f, -0.5f, 0.0f,1.0f,  // POSITION
-                0.0f, 0.0f, 0.9f, 1.0f, },      // COLOR
-
-            { -0.5f, -0.5f, 0.0f, 1.0f,  // POSITION
-              1.0f, 0.0f, 1.0f, 1.0f, }      // COLOR
+            // Yellow Quad
+            { -0.75f,  0.75f, 0.3f, 1.0f,   1.0f, 1.0f, 0.0f, 1.0f },
+            {  0.0f,   0.0f,  0.3f, 1.0f,   1.0f, 1.0f, 0.0f, 1.0f },
+            { -0.75f,  0.0f,  0.3f, 1.0f,   1.0f, 1.0f, 0.0f, 1.0f },
+            {  0.0f,   0.75f, 0.3f, 1.0f,   1.0f, 1.0f, 0.0f, 1.0f },
 
         };
 
@@ -334,9 +395,19 @@ public:
     void CreateIndexBuffer()
     {
         // Define indices for a triangle
-        uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
+        uint32_t indices[] = 
+        {
+            // GREEN quad
+            0, 1, 2,
+            0, 3, 1,
+
+            // BLUE quad
+            4, 5, 6,
+            4, 7, 5,
+        };
         indexBuffer.size = sizeof(indices);
         indexBuffer.stride = sizeof(uint32_t);
+		indexBuffer.m_indexCount = _countof(indices);
 
         // Create index buffer
         D3D12_HEAP_PROPERTIES heapProps = {};
@@ -356,7 +427,7 @@ public:
         bufferDesc.SampleDesc.Count = 1;
         bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-		device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&indexBuffer.m_indexBuffer));
+        device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&indexBuffer.m_indexBuffer));
 
 
         // Copy index data to the index buffer
@@ -369,7 +440,7 @@ public:
         // Initialize the index buffer view.
         indexBuffer.m_indexBufferView.BufferLocation = indexBuffer.m_indexBuffer->GetGPUVirtualAddress();
         indexBuffer.m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-		indexBuffer.m_indexBufferView.SizeInBytes = indexBuffer.size;
+        indexBuffer.m_indexBufferView.SizeInBytes = indexBuffer.size;
     }
 
     void Loop()
@@ -383,9 +454,21 @@ public:
 
 
 
-        // Set the render target view (RTV) for the current back bufferq
+        // get a handle to the depth/stencil buffer
+        D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dpvDescriptorHeap.GetCPUHandle(0);
+
+		// get a handle to the render target view (RTV) for the current back buffer
         D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap.GetCPUHandle(backBufferIndex);
-        commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+
+
+        // set the render target for the output merger stage (the output of the pipeline)
+        // Set the render target view (RTV) for the current back buffer
+		// Set the depth/stencil view (DSV) for the current frame
+        commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
+
+        commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+
 
         // Clear the render target
         float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
@@ -401,9 +484,9 @@ public:
         // draw the triangle
         commandList->SetPipelineState(pipelineState);
         commandList->IASetVertexBuffers(0, 1, &vertexBuffer.m_vertexBufferView);
-		commandList->IASetIndexBuffer(&indexBuffer.m_indexBufferView);
+        commandList->IASetIndexBuffer(&indexBuffer.m_indexBufferView);
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+        commandList->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
 
 
         commandList->Close();
@@ -425,12 +508,19 @@ public:
         if (vertexBuffer.m_vertexBuffer)
             vertexBuffer.Destroy();
 
+		if (depthStencilBuffer)
+			depthStencilBuffer->Release();
 
+
+        if (pipelineState)
+			pipelineState->Release();
+            
         for (uint32_t i = 0; i < 2; ++i)
             if (renderTargets[i])
                 renderTargets[i]->Release();
 
         rtvDescriptorHeap.Destroy();
+		dpvDescriptorHeap.Destroy();
 
         if (swapChain)
             swapChain->Release();
@@ -455,7 +545,7 @@ int main()
 {
     uint32_t width = 1280;
     uint32_t height = 820;
-    const wchar_t title[] = L"DX12 IndexBuffer";
+    const wchar_t title[] = L"DX12 DepthTests";
 
     Render render {};
 
