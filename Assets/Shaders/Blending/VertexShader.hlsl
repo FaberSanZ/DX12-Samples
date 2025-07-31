@@ -16,6 +16,7 @@ PixelInputType VS(VertexInputType input)
 {
     PixelInputType output;
 
+    
     output.Pos = input.position;
     output.Color = input.color;
 

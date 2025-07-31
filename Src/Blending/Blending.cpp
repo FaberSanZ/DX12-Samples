@@ -379,7 +379,9 @@ public:
         // Depth stencil
         D3D12_DEPTH_STENCIL_DESC depthStencilDesc = {};
         depthStencilDesc.DepthEnable = true;
-		depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // Set to zero to disable depth writing
+
+        
+		depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // This prevents opaque pixels from crowding out transparent pixels drawn later.
         depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
         depthStencilDesc.StencilEnable = false;
 
