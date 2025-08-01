@@ -26,6 +26,7 @@ Example | Details
 <img src="Screenshots/DepthTests.png" width=380> | [DepthTests](Src/DepthTests)<br> We will create a depth/stencil buffer, then create a depth/stencil view which we bind to the OM stage of the pipeline
 <img src="Screenshots/BasicSync.png" width=380> | [Basic Sync](Src/BasicSynchronizing)<br> This example adds basic synchronization using ID3D12Fence to ensure that the GPU has completed its work before reusing resources. It also properly handles window resizing by recreating the Render Target Views (RTVs) and Depth/Stencil Views (DSVs) whenever the swap chain is resized.
 <img src="Screenshots/Blending.png" width=380> | [Blending](Src/Blending)<br> Here we will learn about a technique called "blending"! This will give us the ability to render "transparent" primitives.
+<img src="Screenshots/ConstantBuffer.png" width=380> | [ConstantBuffer](Src/ConstantBuffer)<br> In this sample, we will learn about matrices, transformations, world/view/projection space matrices, and constant buffers
 
 
 
