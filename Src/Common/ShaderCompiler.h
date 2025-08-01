@@ -6,7 +6,6 @@
 #include <vector>
 
 using Microsoft::WRL::ComPtr;
-
 namespace Core
 {
 	class ShaderCompilerDXC

@@ -1,14 +1,24 @@
 #pragma once
 
+#include <Windows.h>
+#include <tchar.h>
 
-#include <windows.h>
 #include <functional>
+#include <imgui_impl_win32.h>
+//#include "imgui_impl_dx12.h"
+#include <imgui.h>
 
+
+
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace Desktop
 {
+
     class WindowApp
     {
+
     public:
 
 
@@ -31,6 +41,7 @@ namespace Desktop
         uint32_t GetHeight() const { return m_Height; }
 
     private:
+
         static LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         void HandleResize(UINT width, UINT height);
 

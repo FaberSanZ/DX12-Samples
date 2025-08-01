@@ -1,6 +1,5 @@
 #include "Window.h"
 
-
 namespace Desktop
 {
     WindowApp::WindowApp(uint32_t width, uint32_t height, const wchar_t* title)
@@ -72,8 +71,13 @@ namespace Desktop
         onResize = func;
     }
 
+
     LRESULT CALLBACK WindowApp::WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
+
+        if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+            return true;
+
         // Capturar el puntero a la clase al iniciar
         if (msg == WM_NCCREATE)
         {
@@ -86,6 +90,10 @@ namespace Desktop
         WindowApp* window = reinterpret_cast<WindowApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
         if (!window)
             return DefWindowProc(hWnd, msg, wParam, lParam);
+
+   //     if (window->onImgui)
+			//window->onImgui(hWnd, msg, wParam, lParam);
+
 
         switch (msg)
         {
