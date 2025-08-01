@@ -185,15 +185,11 @@ public:
         IDXGISwapChain1* tempSwapChain = nullptr;
         factory->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &tempSwapChain);
 
-
+        // 
         tempSwapChain->QueryInterface(IID_PPV_ARGS(&swapChain));
         factory->Release();
 
-
-
-
-
-
+		// Create command allocator and command list
         device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAlloc));
         device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAlloc, nullptr, IID_PPV_ARGS(&commandList));
 
@@ -330,14 +326,6 @@ public:
         D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errorBlob);
         device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
 
-        // --- PIPELINE STATE ---
-        D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-        psoDesc.pRootSignature = rootSignature;
-
-        psoDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-        psoDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-
-
 
         // Define the vertex input layout.
         D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -346,20 +334,17 @@ public:
             { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
         };
 
-        psoDesc.InputLayout.NumElements = _countof(inputElementDescs);
-        psoDesc.InputLayout.pInputElementDescs = inputElementDescs;
 
-        // Rasterizer state manual
+        // Rasterizer state
         D3D12_RASTERIZER_DESC rasterizerDesc = {};
         rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
         rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
         rasterizerDesc.FrontCounterClockwise = false;
         rasterizerDesc.DepthClipEnable = true;
-        psoDesc.RasterizerState = rasterizerDesc;
 
 
-		// Blend state
-		// This is the blend state for the pipeline. It defines how blending is done.
+        // Blend state
+        // This is the blend state for the pipeline. It defines how blending is done.
         D3D12_BLEND_DESC blendDesc = {};
         blendDesc.AlphaToCoverageEnable = false;
         blendDesc.IndependentBlendEnable = false;
@@ -372,30 +357,31 @@ public:
         blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-        psoDesc.BlendState = blendDesc;
-
-
 
         // Depth stencil
         D3D12_DEPTH_STENCIL_DESC depthStencilDesc = {};
         depthStencilDesc.DepthEnable = true;
-
-        
-		depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // This prevents opaque pixels from crowding out transparent pixels drawn later.
+        depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // This prevents opaque pixels from crowding out transparent pixels drawn later.
         depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
         depthStencilDesc.StencilEnable = false;
 
+
+
+        // --- PIPELINE STATE [PSO]---
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+        psoDesc.pRootSignature = rootSignature;
+        psoDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+        psoDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+        psoDesc.InputLayout.NumElements = _countof(inputElementDescs);
+        psoDesc.InputLayout.pInputElementDescs = inputElementDescs;
+        psoDesc.RasterizerState = rasterizerDesc;
+        psoDesc.BlendState = blendDesc;
         psoDesc.DepthStencilState = depthStencilDesc;
         psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-
-
         psoDesc.SampleMask = UINT_MAX;
         psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         psoDesc.NumRenderTargets = 1;
-
-		// Set the render target format
-        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; 
+        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;  // Set the render target format
         psoDesc.SampleDesc.Count = 1;
 
         device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
@@ -413,17 +399,17 @@ public:
 
         Vertex vertices[] =
         {
-            { -0.20f, -0.55f, 0.0f, 1.0f,   1.0f, 0.2f, 0.2f, 0.1f },
-            { -0.55f,  0.55f, 0.0f, 1.0f,   1.0f, 0.2f, 0.2f, 1.0f },
-            {  0.15f,  0.55f, 0.0f, 1.0f,   1.0f, 0.2f, 0.2f, 0.5f },
+            { -0.20f, -0.55f, 0.0f, 1.0f,   1.0f, 0.5f, 0.2f, 0.1f },
+            { -0.55f,  0.55f, 0.0f, 1.0f,   1.0f, 0.5f, 0.2f, 1.0f },
+            {  0.15f,  0.55f, 0.0f, 1.0f,   1.0f, 0.5f, 0.2f, 0.5f },
 
-            {  0.00f, -0.40f, 0.0f, 1.0f,   0.2f, 1.0f, 0.2f, 0.1f },
-            { -0.35f,  0.70f, 0.0f, 1.0f,   0.2f, 1.0f, 0.2f, 1.0f },
-            {  0.35f,  0.70f, 0.0f, 1.0f,   0.2f, 1.0f, 0.2f, 0.5f },
+            {  0.00f, -0.40f, 0.0f, 1.0f,   0.2f, 1.0f, 0.3f, 0.1f },
+            { -0.35f,  0.70f, 0.0f, 1.0f,   0.2f, 1.0f, 0.3f, 1.0f },
+            {  0.35f,  0.70f, 0.0f, 1.0f,   0.2f, 1.0f, 0.3f, 0.5f },
 
-            {  0.20f, -0.70f, 0.0f, 1.0f,   0.2f, 0.2f, 1.0f, 0.1f },
-            { -0.15f,  0.40f, 0.0f, 1.0f,   0.2f, 0.2f, 1.0f, 1.0f },
-            {  0.55f,  0.40f, 0.0f, 1.0f,   0.2f, 0.2f, 1.0f, 0.5f },
+            {  0.20f, -0.70f, 0.0f, 1.0f,   0.3f, 0.2f, 1.0f, 0.1f },
+            { -0.15f,  0.40f, 0.0f, 1.0f,   0.3f, 0.2f, 1.0f, 1.0f },
+            {  0.55f,  0.40f, 0.0f, 1.0f,   0.3f, 0.2f, 1.0f, 0.5f },
         };
 
         vertexBuffer.size = sizeof(vertices);
@@ -524,7 +510,6 @@ public:
         commandList->Reset(commandAlloc, nullptr);
 
 
-
         // get a handle to the depth/stencil buffer
         D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dpvDescriptorHeap.GetCPUHandle(0);
 
@@ -536,13 +521,12 @@ public:
         // Set the render target view (RTV) for the current back buffer
         // Set the depth/stencil view (DSV) for the current frame
         commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
-
         commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 
 
         // Clear the render target
-        float clearColor[] = { 0.1f, 0.2f, 0.35f, 1.0f };
+        float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
         commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 
