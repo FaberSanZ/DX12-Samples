@@ -14,7 +14,6 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
-//#include <imgui_impl_win32.cpp>
 
 
 
@@ -630,7 +629,7 @@ public:
 
 
         
-
+		// Create second constant buffer
         device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&constBuffer2.m_buffer));
         // Create constant 2 buffer view (CBV)
         constBuffer2.m_desc.BufferLocation = constBuffer2.m_buffer->GetGPUVirtualAddress();
@@ -683,7 +682,6 @@ public:
 
     void OnUpdate()
     {
-        // Acumulamos rotaciones
         for (int i = 0; i < 3; ++i)
         {
             cube1Angles[i] += cube1RotationSpeed[i];
@@ -838,11 +836,9 @@ public:
         m_Width = newWidth;
         m_Height = newHeight;
 
-        // Esperar GPU si estás usando varios buffers
         commandQueue->Signal(m_fence, ++m_fenceValue);
         WaitForPreviousFrame();
 
-        // Liberar buffers antiguos
         for (int i = 0; i < m_FrameCount; ++i)
         {
             if (renderTargets[i]) renderTargets[i]->Release();
@@ -852,18 +848,13 @@ public:
         // Resize swap chain
         swapChain->ResizeBuffers(m_FrameCount, m_Width, m_Height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 
-        // Volver a crear RTVs
         CreateRenderTargetViews();
 
-        // Volver a crear el Depth Buffer
         CreateDepthBuffer();
 
         // Viewport & Scissor Rect
         viewport = { 0.0f, 0.0f, static_cast<float>(m_Width), static_cast<float>(m_Height), 0.0f, 1.0f };
         scissorRect = { 0, 0, static_cast<long>(m_Width), static_cast<long>(m_Height) };
-
-
-
 
         CreateCamera();
     }
@@ -871,6 +862,10 @@ public:
 
     void Cleanup()
     {
+        ImGui_ImplDX12_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+
         if (indexBuffer.m_indexBuffer)
             indexBuffer.Destroy();
 

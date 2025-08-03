@@ -364,10 +364,8 @@ public:
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
         psoDesc.BlendState = blendDesc;
 
+
         // Depth stencil
-
-
-
         D3D12_DEPTH_STENCIL_DESC depthStencilDesc = {};
         depthStencilDesc.DepthEnable = true;
         depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
@@ -566,11 +564,9 @@ public:
         m_Width = newWidth;
         m_Height = newHeight;
 
-        // Esperar GPU si estás usando varios buffers
         commandQueue->Signal(m_fence, ++m_fenceValue);
         WaitForPreviousFrame();
 
-        // Liberar buffers antiguos
         for (int i = 0; i < m_FrameCount; ++i)
         {
             if (renderTargets[i]) renderTargets[i]->Release();
@@ -580,10 +576,8 @@ public:
         // Resize swap chain
         swapChain->ResizeBuffers(m_FrameCount, m_Width, m_Height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 
-        // Volver a crear RTVs
         CreateRenderTargetViews();
 
-        // Volver a crear el Depth Buffer
         CreateDepthBuffer();
 
         // Viewport & Scissor Rect
