@@ -596,7 +596,6 @@ public:
         cbvDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2, true);
 
 
-
         contsBuffer.m_size = (sizeof(CameraBuffer) + 255) & ~255;
 
         // Create constant buffer
@@ -794,8 +793,6 @@ public:
         commandList->IASetIndexBuffer(&indexBuffer.m_indexBufferView);
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         commandList->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
-
-
 
 
         // Start the Dear ImGui frame
