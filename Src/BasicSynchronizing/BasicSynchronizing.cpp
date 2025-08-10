@@ -189,10 +189,6 @@ public:
         factory->Release();
 
 
-
-
-
-
         device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAlloc));
         device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAlloc, nullptr, IID_PPV_ARGS(&commandList));
 
@@ -260,7 +256,6 @@ public:
             device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
             renderTargets[i] = backBuffer;
 		}
-
     }
 
 
@@ -372,11 +367,10 @@ public:
         depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
         depthStencilDesc.StencilEnable = false;
 
+
+		// Set the depth stencil state in the pipeline state object (PSO) description
         psoDesc.DepthStencilState = depthStencilDesc;
         psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-
-
         psoDesc.SampleMask = UINT_MAX;
         psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         psoDesc.NumRenderTargets = 1;
