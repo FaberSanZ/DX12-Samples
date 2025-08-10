@@ -95,14 +95,13 @@ public:
         D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device));
 
 
-
-
+		// Create command queue
         D3D12_COMMAND_QUEUE_DESC queueDesc = {};
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
 
-
+		// Create swap chain
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
         swapChainDesc.BufferCount = m_FrameCount;
         swapChainDesc.Width = m_Width;
@@ -119,8 +118,6 @@ public:
 
         tempSwapChain->QueryInterface(IID_PPV_ARGS(&swapChain));
         factory->Release();
-
-
 
 
         // Create RTV descriptor heap
@@ -143,7 +140,6 @@ public:
         device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAlloc, nullptr, IID_PPV_ARGS(&commandList));
 
         commandList->Close();
-
 
         return true;
     }
