@@ -1,9 +1,9 @@
-D:\git\cpp native\dx12 samples\External\ImGui\imgui.cpp
-D:\git\cpp native\dx12 samples\External\ImGui\imgui_demo.cpp
-D:\git\cpp native\dx12 samples\External\ImGui\imgui_draw.cpp
-D:\git\cpp native\dx12 samples\External\ImGui\imgui_impl_dx12.cpp
-D:\git\cpp native\dx12 samples\External\ImGui\imgui_impl_win32.cpp
-D:\git\cpp native\dx12 samples\External\ImGui\imgui_tables.cpp
-D:\git\cpp native\dx12 samples\External\ImGui\imgui_widgets.cpp
 D:\git\cpp native\dx12 samples\Src\Common\Graphics\DescriptorHeap.cpp
 D:\git\cpp native\dx12 samples\Src\Common\Desktop\Window.cpp
+D:\git\cpp native\dx12 samples\Src\Common\Graphics\GUI.cpp
+D:\git\cpp native\dx12 samples\Src\Common\Dta\imgui.cpp
+D:\git\cpp native\dx12 samples\Src\Common\Dta\imgui_draw.cpp
+D:\git\cpp native\dx12 samples\Src\Common\Dta\imgui_impl_dx12.cpp
+D:\git\cpp native\dx12 samples\Src\Common\Dta\imgui_impl_win32.cpp
+D:\git\cpp native\dx12 samples\Src\Common\Dta\imgui_tables.cpp
+D:\git\cpp native\dx12 samples\Src\Common\Dta\imgui_widgets.cpp

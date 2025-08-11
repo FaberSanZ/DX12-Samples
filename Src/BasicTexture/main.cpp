@@ -11,9 +11,10 @@
 #include "Desktop/Window.h"
 #include "Graphics/DescriptorHeap.h"
 #include <DirectXMath.h>
-#include "Dta/imgui.h"
-#include "Dta/imgui_impl_win32.h"
-#include "Dta/imgui_impl_dx12.h"
+#include <Graphics/GUI.h>
+//#include "imgui.h"
+//#include "imgui_impl_win32.h"
+//#include "imgui_impl_dx12.h"
 
 
 
@@ -125,9 +126,9 @@ public:
     DescriptorHeap rtvDescriptorHeap {};  // This is a heap for our render target view descriptor
     DescriptorHeap dpvDescriptorHeap {};  // This is a heap for our depth/stencil buffer descriptor
     DescriptorHeap cbvDescriptorHeap {}; // This is a heap for our constant buffer view descriptor
-	DescriptorHeap guiDescriptorHeap {}; // This is a heap for our ImGui descriptor heap
+    DescriptorHeap guiDescriptorHeap {}; // This is a heap for our ImGui descriptor heap
 
-
+	GUI gui; // GUI object for ImGui integration
 
     // Synchronization objects.
     UINT m_frameIndex;
@@ -195,34 +196,10 @@ public:
 
 
 
-		// Create ImGui context
-
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        ImGui::StyleColorsDark();
-
-        // Backend
-        ImGui_ImplWin32_Init(hwnd);
-
-		guiDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
-
-        ImGui_ImplDX12_InitInfo init_info = {};
-        init_info.Device = device;
-        init_info.CommandQueue = commandQueue;
-        init_info.NumFramesInFlight = m_FrameCount;
-        init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-        init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-
-        // Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
-        // (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-        init_info.SrvDescriptorHeap = guiDescriptorHeap.m_Heap;
+        // Create ImGui context
 
 
-        init_info.LegacySingleSrvCpuDescriptor = guiDescriptorHeap.GetCPUDescriptorHandleForHeapStart();
-        init_info.LegacySingleSrvGpuDescriptor = guiDescriptorHeap.GetGPUDescriptorHandleForHeapStart();
-
-        ImGui_ImplDX12_Init(&init_info);
+		gui.Initialize(device, commandQueue, m_FrameCount, hwnd);
 
         return true;
     }
@@ -627,8 +604,8 @@ public:
 
 
 
-        
-		// Create second constant buffer
+
+        // Create second constant buffer
         device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&constBuffer2.m_buffer));
         // Create constant 2 buffer view (CBV)
         constBuffer2.m_desc.BufferLocation = constBuffer2.m_buffer->GetGPUVirtualAddress();
@@ -688,7 +665,7 @@ public:
         }
 
 
-		// Cube 1
+        // Cube 1
         XMMATRIX rot1 = XMMatrixRotationRollPitchYaw(cube1Angles[0], cube1Angles[1], cube1Angles[2]);
         XMMATRIX trans1 = XMMatrixTranslation(cube1Position[0], cube1Position[1], cube1Position[2]);
         cameraData.word = XMMatrixTranspose(rot1 * trans1);
@@ -715,21 +692,21 @@ public:
 
     void OnRenderGui()
     {
-        ImGui::Begin("Cubes Transform Control");
+        //ImGui::Begin("Cubes Transform Control");
 
-        if (ImGui::CollapsingHeader("Cube 1"))
-        {
-            ImGui::SliderFloat3("Pos 1", cube1Position, -5.0f, 5.0f);
-            ImGui::SliderFloat3("Rot Speed 1", cube1RotationSpeed, -0.1f, 0.1f);
-        }
+        //if (ImGui::CollapsingHeader("Cube 1"))
+        //{
+        //    ImGui::SliderFloat3("Pos 1", cube1Position, -5.0f, 5.0f);
+        //    ImGui::SliderFloat3("Rot Speed 1", cube1RotationSpeed, -0.1f, 0.1f);
+        //}
 
-        if (ImGui::CollapsingHeader("Cube 2"))
-        {
-            ImGui::SliderFloat3("Pos 2", cube2Position, -5.0f, 5.0f);
-            ImGui::SliderFloat3("Rot Speed 2", cube2RotationSpeed, -0.1f, 0.1f);
-        }
+        //if (ImGui::CollapsingHeader("Cube 2"))
+        //{
+        //    ImGui::SliderFloat3("Pos 2", cube2Position, -5.0f, 5.0f);
+        //    ImGui::SliderFloat3("Rot Speed 2", cube2RotationSpeed, -0.1f, 0.1f);
+        //}
 
-        ImGui::End();
+        //ImGui::End();
     }
 
 
@@ -783,7 +760,7 @@ public:
 
 
 
-		//  second cube
+        //  second cube
         commandList->SetDescriptorHeaps(_countof(heaps), heaps);
         commandList->SetGraphicsRootSignature(rootSignature);
         commandList->SetGraphicsRootDescriptorTable(0, cbvDescriptorHeap.GetGPUHandle(1));
@@ -795,18 +772,12 @@ public:
         commandList->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
 
 
-        // Start the Dear ImGui frame
-        ImGui_ImplDX12_NewFrame();
-        ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
-        OnRenderGui();
-        // Render ImGui
-        ImGui::Render();
 
+        gui.NewFrame();
+        //gui.
 
-        ID3D12DescriptorHeap* guiheaps[] = { guiDescriptorHeap.m_Heap };
-        commandList->SetDescriptorHeaps(_countof(guiheaps), guiheaps);
-        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
+        gui.Render(commandList);
+
 
 
         commandList->Close();
@@ -858,9 +829,6 @@ public:
 
     void Cleanup()
     {
-        ImGui_ImplDX12_Shutdown();
-        ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
 
         if (indexBuffer.m_indexBuffer)
             indexBuffer.Destroy();
@@ -938,3 +906,4 @@ int main()
 
     return 0;
 }
+

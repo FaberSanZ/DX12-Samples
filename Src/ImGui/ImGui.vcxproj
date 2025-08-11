@@ -72,19 +72,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)..\External\ImGui;$(SolutionDir)Common;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Common;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)..\External\ImGui;$(SolutionDir)Common;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Common;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)..\External\ImGui;$(SolutionDir)Common;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Common;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)..\External\ImGui;$(SolutionDir)Common;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Common;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -140,12 +140,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\External\ImGui\imgui.cpp" />
-    <ClCompile Include="..\..\External\ImGui\imgui_demo.cpp" />
-    <ClCompile Include="..\..\External\ImGui\imgui_draw.cpp" />
-    <ClCompile Include="..\..\External\ImGui\imgui_impl_dx12.cpp" />
-    <ClCompile Include="..\..\External\ImGui\imgui_tables.cpp" />
-    <ClCompile Include="..\..\External\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>

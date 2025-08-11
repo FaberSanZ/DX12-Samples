@@ -27,16 +27,16 @@
 // Initialization data, for ImGui_ImplDX12_Init()
 struct ImGui_ImplDX12_InitInfo
 {
-    ID3D12Device*               Device;
-    ID3D12CommandQueue*         CommandQueue;       // Command queue used for queuing texture uploads.
+    ID3D12Device* Device;
+    ID3D12CommandQueue* CommandQueue;       // Command queue used for queuing texture uploads.
     int                         NumFramesInFlight;
     DXGI_FORMAT                 RTVFormat;          // RenderTarget format.
     DXGI_FORMAT                 DSVFormat;          // DepthStencilView format.
-    void*                       UserData;
+    void* UserData;
 
     // Allocating SRV descriptors for textures is up to the application, so we provide callbacks.
     // (current version of the backend will only allocate one descriptor, from 1.92 the backend will need to allocate more)
-    ID3D12DescriptorHeap*       SrvDescriptorHeap;
+    ID3D12DescriptorHeap* SrvDescriptorHeap;
     void                        (*SrvDescriptorAllocFn)(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle);
     void                        (*SrvDescriptorFreeFn)(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_desc_handle);
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
@@ -44,7 +44,7 @@ struct ImGui_ImplDX12_InitInfo
     D3D12_GPU_DESCRIPTOR_HANDLE LegacySingleSrvGpuDescriptor;
 #endif
 
-    ImGui_ImplDX12_InitInfo()   { memset((void*)this, 0, sizeof(*this)); }
+    ImGui_ImplDX12_InitInfo() { memset((void*)this, 0, sizeof(*this)); }
 };
 
 // Follow "Getting Started" link and check examples/ folder to learn about using backends!
@@ -72,8 +72,8 @@ IMGUI_IMPL_API void     ImGui_ImplDX12_UpdateTexture(ImTextureData* tex);
 // (Please open an issue if you feel you need access to more data)
 struct ImGui_ImplDX12_RenderState
 {
-    ID3D12Device*               Device;
-    ID3D12GraphicsCommandList*  CommandList;
+    ID3D12Device* Device;
+    ID3D12GraphicsCommandList* CommandList;
 };
 
 #endif // #ifndef IMGUI_DISABLE
