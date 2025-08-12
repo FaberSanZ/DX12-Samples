@@ -121,8 +121,6 @@ public:
 
     DescriptorHeap rtvDescriptorHeap {};  // This is a heap for our render target view descriptor
     DescriptorHeap dpvDescriptorHeap {};  // This is a heap for our depth/stencil buffer descriptor
-	DescriptorHeap cbvDescriptorHeap {}; // This is a heap for our constant buffer view descriptor
-
 
 
     // Synchronization objects.
@@ -548,14 +546,10 @@ public:
 
     void CreateConstantBuffer()
     {
-        cbvDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1, true);
-
-
-
         contsBuffer.m_size = 256;
 
         // Create constant buffer
-        contsBuffer.m_size = (256 + 255) & ~255;; // Size of the constant buffer in bytes
+        contsBuffer.m_size = (contsBuffer.m_size + 255) & ~255;; // Size of the constant buffer in bytes
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
         heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
