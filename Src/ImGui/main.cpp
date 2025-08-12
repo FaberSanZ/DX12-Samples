@@ -84,7 +84,7 @@ public:
                 m_buffer = nullptr;
             }
         }
-    } contsBuffer, constBuffer2;
+    } constBuffer, constBuffer2;
 
 
 
@@ -124,7 +124,6 @@ public:
 
     DescriptorHeap rtvDescriptorHeap {};  // This is a heap for our render target view descriptor
     DescriptorHeap dpvDescriptorHeap {};  // This is a heap for our depth/stencil buffer descriptor
-    DescriptorHeap cbvDescriptorHeap {}; // This is a heap for our constant buffer view descriptor
 	DescriptorHeap guiDescriptorHeap {}; // This is a heap for our ImGui descriptor heap
 
 
@@ -339,18 +338,13 @@ public:
 
 
 
-        D3D12_DESCRIPTOR_RANGE cbvRange = {};
-        cbvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;  // Constant Buffer View
-        cbvRange.NumDescriptors = 1;
-        cbvRange.BaseShaderRegister = 0;  // b0
-        cbvRange.RegisterSpace = 0;
-        cbvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
 
 
         D3D12_ROOT_PARAMETER cbvRootParam = {};
-        cbvRootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        cbvRootParam.DescriptorTable.NumDescriptorRanges = 1;
-        cbvRootParam.DescriptorTable.pDescriptorRanges = &cbvRange;
+        cbvRootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		cbvRootParam.Descriptor.ShaderRegister = 0; // b0
+        cbvRootParam.Descriptor.RegisterSpace = 0;
         cbvRootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 
@@ -593,13 +587,10 @@ public:
 
     void CreateConstantBuffer()
     {
-        cbvDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2, true);
-
-
-        contsBuffer.m_size = (sizeof(CameraBuffer) + 255) & ~255;
+        constBuffer.m_size = (sizeof(CameraBuffer) + 255) & ~255;
 
         // Create constant buffer
-        contsBuffer.m_size = 256; // Size of the constant buffer in bytes
+        constBuffer.m_size = 256; // Size of the constant buffer in bytes
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
         heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -608,7 +599,7 @@ public:
         heapProps.VisibleNodeMask = 1;
         D3D12_RESOURCE_DESC bufferDesc = {};
         bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        bufferDesc.Width = contsBuffer.m_size;
+        bufferDesc.Width = constBuffer.m_size;
         bufferDesc.Height = 1;
         bufferDesc.DepthOrArraySize = 1;
         bufferDesc.MipLevels = 1;
@@ -616,25 +607,11 @@ public:
         bufferDesc.SampleDesc.Count = 1;
         bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-        device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&contsBuffer.m_buffer));
-
-
-        // Create constant buffer view (CBV)
-        contsBuffer.m_desc.BufferLocation = contsBuffer.m_buffer->GetGPUVirtualAddress();
-        contsBuffer.m_desc.SizeInBytes = contsBuffer.m_size;
-
-        device->CreateConstantBufferView(&contsBuffer.m_desc, cbvDescriptorHeap.GetCPUHandle(0));
-
-
+        device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&constBuffer.m_buffer));
 
         
 		// Create second constant buffer
         device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&constBuffer2.m_buffer));
-        // Create constant 2 buffer view (CBV)
-        constBuffer2.m_desc.BufferLocation = constBuffer2.m_buffer->GetGPUVirtualAddress();
-        constBuffer2.m_desc.SizeInBytes = contsBuffer.m_size;
-
-        device->CreateConstantBufferView(&constBuffer2.m_desc, cbvDescriptorHeap.GetCPUHandle(1));
 
 
         CreateCamera();
@@ -694,9 +671,9 @@ public:
         cameraData.word = XMMatrixTranspose(rot1 * trans1);
 
         void* mappedData = nullptr;
-        contsBuffer.m_buffer->Map(0, nullptr, &mappedData);
+        constBuffer.m_buffer->Map(0, nullptr, &mappedData);
         memcpy(mappedData, &cameraData, sizeof(CameraBuffer));
-        contsBuffer.m_buffer->Unmap(0, nullptr);
+        constBuffer.m_buffer->Unmap(0, nullptr);
 
 
 
@@ -768,30 +745,28 @@ public:
         commandList->RSSetScissorRects(1, &scissorRect);
 
 
-        ID3D12DescriptorHeap* heaps[] = { cbvDescriptorHeap.m_Heap };
 
-        commandList->SetDescriptorHeaps(_countof(heaps), heaps);
         commandList->SetGraphicsRootSignature(rootSignature);
-        commandList->SetGraphicsRootDescriptorTable(0, cbvDescriptorHeap.GetGPUHandle(0));
 
         commandList->SetPipelineState(pipelineState);
         commandList->IASetVertexBuffers(0, 1, &vertexBuffer.m_vertexBufferView);
         commandList->IASetIndexBuffer(&indexBuffer.m_indexBufferView);
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        commandList->SetGraphicsRootConstantBufferView(0, constBuffer.m_buffer->GetGPUVirtualAddress());
+
         commandList->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
 
 
 
 
 		//  second cube
-        commandList->SetDescriptorHeaps(_countof(heaps), heaps);
         commandList->SetGraphicsRootSignature(rootSignature);
-        commandList->SetGraphicsRootDescriptorTable(0, cbvDescriptorHeap.GetGPUHandle(1));
-
         commandList->SetPipelineState(pipelineState);
         commandList->IASetVertexBuffers(0, 1, &vertexBuffer.m_vertexBufferView);
         commandList->IASetIndexBuffer(&indexBuffer.m_indexBufferView);
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        commandList->SetGraphicsRootConstantBufferView(0, constBuffer2.m_buffer->GetGPUVirtualAddress());
         commandList->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
 
 
