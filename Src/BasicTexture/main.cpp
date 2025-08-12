@@ -12,9 +12,6 @@
 #include "Graphics/DescriptorHeap.h"
 #include <DirectXMath.h>
 #include <Graphics/GUI.h>
-//#include "imgui.h"
-//#include "imgui_impl_win32.h"
-//#include "imgui_impl_dx12.h"
 
 
 
@@ -94,7 +91,7 @@ public:
         XMMATRIX word;
         XMMATRIX view;
         XMMATRIX projection;
-    } cameraData, cameraData2;
+    } cameraData;
 
 
 public:
@@ -102,13 +99,13 @@ public:
 
     uint32_t m_Width { };
     uint32_t m_Height { };
-    uint32_t m_FrameCount { 2 };
+    const uint32_t m_FrameCount { 3 };
 
     // Render device and resources
     ID3D12Device* device = nullptr;
     ID3D12CommandQueue* commandQueue = nullptr;
     IDXGISwapChain3* swapChain = nullptr;
-    ID3D12Resource* renderTargets[2];
+    ID3D12Resource* renderTargets[3];
     ID3D12CommandAllocator* commandAlloc = nullptr;
     ID3D12GraphicsCommandList* commandList = nullptr;
 
@@ -632,13 +629,6 @@ public:
         cameraData.word = DirectX::XMMatrixIdentity();
         cameraData.view = DirectX::XMMatrixTranspose(view);
         cameraData.projection = DirectX::XMMatrixTranspose(projection);
-
-
-        // Transpose matrices for HLSL (row-major in C++, column-major in HLSL)
-        cameraData2.word = DirectX::XMMatrixIdentity();
-        cameraData2.view = DirectX::XMMatrixTranspose(view);
-        cameraData2.projection = DirectX::XMMatrixTranspose(projection);
-
     }
 
 
@@ -678,35 +668,34 @@ public:
 
 
 
-
         // Cube 2
         XMMATRIX rot2 = XMMatrixRotationRollPitchYaw(cube2Angles[0], cube2Angles[1], cube2Angles[2]);
         XMMATRIX trans2 = XMMatrixTranslation(cube2Position[0], cube2Position[1], cube2Position[2]);
-        cameraData2.word = XMMatrixTranspose(rot2 * trans2);
+        cameraData.word = XMMatrixTranspose(rot2 * trans2);
 
         void* mappedData2 = nullptr;
         constBuffer2.m_buffer->Map(0, nullptr, &mappedData2);
-        memcpy(mappedData2, &cameraData2, sizeof(CameraBuffer));
+        memcpy(mappedData2, &cameraData, sizeof(CameraBuffer));
         constBuffer2.m_buffer->Unmap(0, nullptr);
     }
 
     void OnRenderGui()
     {
-        //ImGui::Begin("Cubes Transform Control");
+        ImGui::Begin("Cubes Transform Control");
 
-        //if (ImGui::CollapsingHeader("Cube 1"))
-        //{
-        //    ImGui::SliderFloat3("Pos 1", cube1Position, -5.0f, 5.0f);
-        //    ImGui::SliderFloat3("Rot Speed 1", cube1RotationSpeed, -0.1f, 0.1f);
-        //}
+        if (ImGui::CollapsingHeader("Cube 1"))
+        {
+            ImGui::SliderFloat3("Pos 1", cube1Position, -5.0f, 5.0f);
+            ImGui::SliderFloat3("Rot Speed 1", cube1RotationSpeed, -0.1f, 0.1f);
+        }
 
-        //if (ImGui::CollapsingHeader("Cube 2"))
-        //{
-        //    ImGui::SliderFloat3("Pos 2", cube2Position, -5.0f, 5.0f);
-        //    ImGui::SliderFloat3("Rot Speed 2", cube2RotationSpeed, -0.1f, 0.1f);
-        //}
+        if (ImGui::CollapsingHeader("Cube 2"))
+        {
+            ImGui::SliderFloat3("Pos 2", cube2Position, -5.0f, 5.0f);
+            ImGui::SliderFloat3("Rot Speed 2", cube2RotationSpeed, -0.1f, 0.1f);
+        }
 
-        //ImGui::End();
+        ImGui::End();
     }
 
 
@@ -723,7 +712,7 @@ public:
         commandList->Reset(commandAlloc, nullptr);
 
 
-
+		//std::cout << "Rendering frame: " << backBufferIndex << std::endl;
 
         // get a handle to the depth/stencil buffer
         D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dpvDescriptorHeap.GetCPUHandle(0);
@@ -774,7 +763,8 @@ public:
 
 
         gui.NewFrame();
-        //gui.
+        
+		OnRenderGui();
 
         gui.Render(commandList);
 
@@ -875,7 +865,7 @@ public:
 
 int main()
 {
-    WindowApp win = { 1280u, 720u, L"DX12 ImGui" };
+    WindowApp win = { 1280u, 720u, L"DX12 BasicTexture" };
     win.Initialize(GetModuleHandle(nullptr));
 
     Render render {};

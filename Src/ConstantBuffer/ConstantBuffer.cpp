@@ -302,18 +302,10 @@ public:
 
 
 
-        D3D12_DESCRIPTOR_RANGE cbvRange = {};
-        cbvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;  // Constant Buffer View
-        cbvRange.NumDescriptors = 1;
-        cbvRange.BaseShaderRegister = 0;  // b0
-        cbvRange.RegisterSpace = 0;
-        cbvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-
         D3D12_ROOT_PARAMETER cbvRootParam = {};
-        cbvRootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        cbvRootParam.DescriptorTable.NumDescriptorRanges = 1;
-        cbvRootParam.DescriptorTable.pDescriptorRanges = &cbvRange;
+        cbvRootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		cbvRootParam.Descriptor.ShaderRegister = 0;  // b0
+		cbvRootParam.Descriptor.RegisterSpace = 0;
         cbvRootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 
@@ -563,7 +555,7 @@ public:
         contsBuffer.m_size = 256;
 
         // Create constant buffer
-        contsBuffer.m_size = 256; // Size of the constant buffer in bytes
+        contsBuffer.m_size = (256 + 255) & ~255;; // Size of the constant buffer in bytes
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
         heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -582,12 +574,6 @@ public:
         bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
         device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&contsBuffer.m_buffer));
 
-
-        // Create constant buffer view (CBV)
-        contsBuffer.m_desc.BufferLocation = contsBuffer.m_buffer->GetGPUVirtualAddress();
-		contsBuffer.m_desc.SizeInBytes = contsBuffer.m_size;
-
-        device->CreateConstantBufferView(&contsBuffer.m_desc, cbvDescriptorHeap.GetCPUHandle(0));
 
         CreateCamera();
 	}
@@ -668,19 +654,17 @@ public:
         commandList->RSSetScissorRects(1, &scissorRect);
 
 
-        ID3D12DescriptorHeap* heaps[] = { cbvDescriptorHeap.m_Heap }; // 
-        commandList->SetDescriptorHeaps(_countof(heaps), heaps);
 
         commandList->SetGraphicsRootSignature(rootSignature);
-
-        commandList->SetGraphicsRootDescriptorTable(0, cbvDescriptorHeap.GetGPUHandle(0));
+        commandList->SetPipelineState(pipelineState);
 
 
         // draw the triangle
-        commandList->SetPipelineState(pipelineState);
         commandList->IASetVertexBuffers(0, 1, &vertexBuffer.m_vertexBufferView);
         commandList->IASetIndexBuffer(&indexBuffer.m_indexBufferView);
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		commandList->SetGraphicsRootConstantBufferView(0, contsBuffer.m_buffer->GetGPUVirtualAddress());
         commandList->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
 
 
