@@ -6,7 +6,7 @@
 
 </br>
 
-This repository contains **small, progressive DirectX 12 examples**, designed to teach and demonstrate each part of the graphics pipeline in an intuitive and minimalistic way.  
+📝This repository contains **small, progressive DirectX 12 examples**, designed to teach and demonstrate each part of the graphics pipeline in an intuitive and minimalistic way.  
 Each sample is isolated and focused, making it easy to learn DX12 step by step, without unnecessary complexity.
 
 </br>
