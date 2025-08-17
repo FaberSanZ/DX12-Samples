@@ -333,11 +333,8 @@ public:
 
     void CreatePipeline()
     {
-        auto vertexShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/ConstantBuffers/VertexShader.hlsl", L"VS", L"vs_6_0");
-        auto pixelShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/ConstantBuffers/PixelShader.hlsl", L"PS", L"ps_6_0");
-
-
-
+        auto vertexShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/ImGui/VertexShader.hlsl", L"VS", L"vs_6_0");
+        auto pixelShaderBlob = shaderCompiler.Compile(L"../../../../Assets/Shaders/ImGui/PixelShader.hlsl", L"PS", L"ps_6_0");
 
 
 
