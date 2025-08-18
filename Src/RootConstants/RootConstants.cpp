@@ -88,7 +88,7 @@ public:
                 m_buffer = nullptr;
             }
         }
-    } constBuffer, constBuffer2;
+    } constBuffer;
 
 
 
@@ -481,11 +481,11 @@ public:
 
         // 1. Define el root parameter para las constantes
         D3D12_ROOT_PARAMETER rootParam = {};
-        rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS; // Tipo: constantes de 32 bits
-        rootParam.Constants.Num32BitValues = 8;                               // 4 constantes (4x4 = 16 bytes)
-        rootParam.Constants.ShaderRegister = 1;                               // Register b0
-        rootParam.Constants.RegisterSpace = 0;                                // Espacio 0
-        rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;          // Visible en el vertex shader
+        rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+        rootParam.Constants.Num32BitValues = 8;                               
+        rootParam.Constants.ShaderRegister = 1;                               // Register b1
+        rootParam.Constants.RegisterSpace = 0;                                
+        rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;       
 
 
         D3D12_ROOT_PARAMETER rootParams[] = { cbvRootParam, rootParam };
@@ -748,8 +748,6 @@ public:
         device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&constBuffer.m_buffer));
 
 
-        // Create second constant buffer
-        device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&constBuffer2.m_buffer));
     }
 
 
