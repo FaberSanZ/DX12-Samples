@@ -25,6 +25,36 @@ using namespace Graphics;
 using namespace Desktop;
 using namespace DirectX;
 
+// RootConstants.cpp : This file contains the 'main' function. Program execution begins and ends there.
+//
+
+
+#include <d3d12.h>
+#include <dxgi1_4.h>
+#include <tchar.h>
+#include <iostream>
+#include <random> // std::random_device, std::mt19937, std::uniform_real_distribution
+#include <d3dcompiler.h>
+#include "ShaderCompiler.h"
+#include "Desktop/Window.h"
+#include "Graphics/DescriptorHeap.h"
+#include <DirectXMath.h>
+//#include "Dta/imgui.h"
+//#include "Dta/imgui_impl_win32.h"
+//#include "Dta/imgui_impl_dx12.h"
+#include <Graphics/GUI.h>
+
+
+
+
+
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+
+using namespace Graphics;
+using namespace Desktop;
+using namespace DirectX;
+
 class Render
 {
 public:
@@ -232,7 +262,6 @@ public:
 
     DescriptorHeap rtvDescriptorHeap {};  // This is a heap for our render target view descriptor
     DescriptorHeap dpvDescriptorHeap {};  // This is a heap for our depth/stencil buffer descriptor
-    DescriptorHeap guiDescriptorHeap {}; // This is a heap for our ImGui descriptor heap
 
 
 
@@ -242,15 +271,21 @@ public:
     ID3D12Fence* m_fence;
     UINT64 m_fenceValue;
 
+    // GUI object for ImGui integration
+    GUI gui;
 
-	// Camera
+
+    // Camera
     Camera camera {};
 
 
-	// Cube positions and rotation speeds
+    // Cube positions and rotation speeds, 
+    // // these will be used to control the cubes in the scene
     const uint32_t OBJECT_INSTANCES = 255;
     DirectX::XMFLOAT3 rotationSpeeds[256] = {};
     float rotation = 0.0f;
+    float dimension = 0;
+    uint32_t drawCallCount = 0;
 
 
 
@@ -301,6 +336,10 @@ public:
         commandList->Close();
 
 
+        // Create ImGui context
+        gui.Initialize(device, commandQueue, m_FrameCount, hwnd);
+
+
         CreateSynchronizationObjects();
         CreateRenderTargetViews();
         CreateDepthBuffer();
@@ -308,41 +347,6 @@ public:
         CreateVertexBuffer();
         CreateIndexBuffer();
         CreateConstantBuffer();
-
-
-
-
-        // Create ImGui context
-
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        ImGui::StyleColorsDark();
-
-        // Backend
-        ImGui_ImplWin32_Init(hwnd);
-
-        guiDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
-
-        ImGui_ImplDX12_InitInfo init_info = {};
-        init_info.Device = device;
-        init_info.CommandQueue = commandQueue;
-        init_info.NumFramesInFlight = m_FrameCount;
-        init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-        init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-
-        // Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
-        // (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-        init_info.SrvDescriptorHeap = guiDescriptorHeap.m_Heap;
-
-
-        init_info.LegacySingleSrvCpuDescriptor = guiDescriptorHeap.GetCPUDescriptorHandleForHeapStart();
-        init_info.LegacySingleSrvGpuDescriptor = guiDescriptorHeap.GetGPUDescriptorHandleForHeapStart();
-
-        ImGui_ImplDX12_Init(&init_info);
-
-
-
         CreateCamera();
         InitializeRotationSpeeds();
 
@@ -471,10 +475,10 @@ public:
         // 1. Define el root parameter para las constantes
         D3D12_ROOT_PARAMETER rootParam = {};
         rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-        rootParam.Constants.Num32BitValues = 8;                               
+        rootParam.Constants.Num32BitValues = 8;
         rootParam.Constants.ShaderRegister = 1;                               // Register b1
-        rootParam.Constants.RegisterSpace = 0;                                
-        rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;       
+        rootParam.Constants.RegisterSpace = 0;
+        rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 
         D3D12_ROOT_PARAMETER rootParams[] = { cbvRootParam, rootParam };
@@ -739,12 +743,10 @@ public:
 
     }
 
-
-
     void CreateCamera()
     {
         camera.SetPosition(0.0f, 0.0f, -5.0f);
-		camera.SetRotation(0.0f, 0.0f, 0.0f);
+        camera.SetRotation(0.0f, 0.0f, 0.0f);
         camera.Render();
 
         float SCREEN_DEPTH = 1000.0f;
@@ -760,8 +762,6 @@ public:
         cameraBuffer.view = DirectX::XMMatrixTranspose(camera.GetViewMatrix());
     }
 
-
-
     void OnUpdate()
     {
         camera.Render();
@@ -774,17 +774,17 @@ public:
         constBuffer.m_buffer->Unmap(0, nullptr);
     }
 
-	float dimension = 0;
+
 
     void OnRenderGui()
     {
         ImGui::Begin("Camera Control");
-		ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-		ImGui::Text("Camera Rotation: (%.2f, %.2f, %.2f)", camera.GetRotation().x, camera.GetRotation().y, camera.GetRotation().z);
+        ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
+        ImGui::Text("Camera Rotation: (%.2f, %.2f, %.2f)", camera.GetRotation().x, camera.GetRotation().y, camera.GetRotation().z);
         ImGui::Text("Draw Calls: %u", drawCallCount);
         drawCallCount = 0;
-		// Slider for dimension
-		ImGui::SliderFloat("Dimension", &dimension, -10.0f, 10.0f);
+        // Slider for dimension
+        ImGui::SliderFloat("Dimension", &dimension, -10.0f, 10.0f);
 
 
         if (ImGui::Button("Update Camera"))
@@ -809,7 +809,6 @@ public:
         }
     }
 
-	uint32_t drawCallCount = 0;
 
     void AddCube(ID3D12GraphicsCommandList* cmd, const float position[3], const float rotation[3])
     {
@@ -822,7 +821,7 @@ public:
 
         cmd->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
         cmd->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
-		drawCallCount++;
+        drawCallCount++;
     }
 
 
@@ -830,7 +829,7 @@ public:
     {
         rotation += 0.02f;
 
-		uint32_t dim = static_cast<uint32_t>(std::cbrt(OBJECT_INSTANCES)); // using cube root to determine the dimension of the grid
+        uint32_t dim = static_cast<uint32_t>(std::cbrt(OBJECT_INSTANCES)); // using cube root to determine the dimension of the grid
         DirectX::XMFLOAT3 offset = { dimension, dimension, dimension };
 
         float halfDimOffsetX = (dim * offset.x) / 2.0f;
@@ -891,7 +890,7 @@ public:
         float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
         commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
-		// Tender the scene
+        // Tender the scene
         commandList->RSSetViewports(1, &viewport);
         commandList->RSSetScissorRects(1, &scissorRect);
         commandList->SetGraphicsRootSignature(rootSignature);
@@ -900,25 +899,20 @@ public:
         commandList->IASetIndexBuffer(&indexBuffer.m_indexBufferView);
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         commandList->SetGraphicsRootConstantBufferView(0, constBuffer.m_buffer->GetGPUVirtualAddress());
-
         GenerateCubes(commandList);
 
 
 
         // Start the Dear ImGui frame
-        ImGui_ImplDX12_NewFrame();
-        ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
+        gui.NewFrame();
+        // Call the function to render the GUI
         OnRenderGui();
         // Render ImGui
-        ImGui::Render();
+        gui.Render(commandList);
 
 
-        ID3D12DescriptorHeap* guiheaps[] = { guiDescriptorHeap.m_Heap };
-        commandList->SetDescriptorHeaps(_countof(guiheaps), guiheaps);
-        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
-
+        // Close the command list
         commandList->Close();
 
         // Execute the command list
