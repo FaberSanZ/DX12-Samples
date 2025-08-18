@@ -12,45 +12,14 @@
 #include "Desktop/Window.h"
 #include "Graphics/DescriptorHeap.h"
 #include <DirectXMath.h>
-#include "Dta/imgui.h"
-#include "Dta/imgui_impl_win32.h"
-#include "Dta/imgui_impl_dx12.h"
-
-
-
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
-
-using namespace Graphics;
-using namespace Desktop;
-using namespace DirectX;
-
-// RootConstants.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
-
-#include <d3d12.h>
-#include <dxgi1_4.h>
-#include <tchar.h>
-#include <iostream>
-#include <random> // std::random_device, std::mt19937, std::uniform_real_distribution
-#include <d3dcompiler.h>
-#include "ShaderCompiler.h"
-#include "Desktop/Window.h"
-#include "Graphics/DescriptorHeap.h"
-#include <DirectXMath.h>
-//#include "Dta/imgui.h"
-//#include "Dta/imgui_impl_win32.h"
-//#include "Dta/imgui_impl_dx12.h"
 #include <Graphics/GUI.h>
 
-
-
-
-
+// Link necessary d3d12 libraries.
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
+
+// Using namespaces for convenience.
 using namespace Graphics;
 using namespace Desktop;
 using namespace DirectX;
@@ -129,6 +98,7 @@ public:
     {
         float m_positionX, m_positionY, m_positionZ;
         float m_rotationX, m_rotationY, m_rotationZ;
+
         XMMATRIX m_viewMatrix;
 
 
@@ -249,19 +219,23 @@ public:
     ID3D12CommandAllocator* commandAlloc = nullptr;
     ID3D12GraphicsCommandList* commandList = nullptr;
 
-    ID3D12Resource* depthStencilBuffer; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
+    // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
+    ID3D12Resource* depthStencilBuffer; 
 
     // Pipeline state and root signature
     ID3D12PipelineState* pipelineState = nullptr;
     ID3D12RootSignature* rootSignature = nullptr;
     Core::ShaderCompilerDXC shaderCompiler {};
 
-    // Set the viewport and scissor rect
+	// using viewport and scissor rect to define the area we will render to
     D3D12_VIEWPORT viewport = { };
     D3D12_RECT scissorRect = { };
 
-    DescriptorHeap rtvDescriptorHeap {};  // This is a heap for our render target view descriptor
-    DescriptorHeap dpvDescriptorHeap {};  // This is a heap for our depth/stencil buffer descriptor
+    // This is a heap for our render target view descriptor
+    DescriptorHeap rtvDescriptorHeap {}; 
+
+    // This is a heap for our depth/stencil buffer descriptor
+    DescriptorHeap dpvDescriptorHeap {};  
 
 
 
@@ -277,10 +251,12 @@ public:
 
     // Camera
     Camera camera {};
+    float SCREEN_DEPTH = 1000.0f;
+    float SCREEN_NEAR = 0.1f;
 
 
     // Cube positions and rotation speeds, 
-    // // these will be used to control the cubes in the scene
+    // these will be used to control the cubes in the scene
     const uint32_t OBJECT_INSTANCES = 255;
     DirectX::XMFLOAT3 rotationSpeeds[256] = {};
     float rotation = 0.0f;
@@ -291,6 +267,7 @@ public:
 
     bool Initialize(HWND hwnd, uint32_t width, uint32_t Heigh)
     {
+		// Set screen width and height
         m_Width = width;
         m_Height = Heigh;
 
@@ -349,7 +326,6 @@ public:
         CreateConstantBuffer();
         CreateCamera();
         InitializeRotationSpeeds();
-
 
         return true;
     }
@@ -749,9 +725,6 @@ public:
         camera.SetRotation(0.0f, 0.0f, 0.0f);
         camera.Render();
 
-        float SCREEN_DEPTH = 1000.0f;
-        float SCREEN_NEAR = 0.1f;
-
 
         // Setup the projection matrix.
         auto fieldOfView = 3.141592654f / 4.0f;
@@ -779,22 +752,40 @@ public:
     void OnRenderGui()
     {
         ImGui::Begin("Camera Control");
-        ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-        ImGui::Text("Camera Rotation: (%.2f, %.2f, %.2f)", camera.GetRotation().x, camera.GetRotation().y, camera.GetRotation().z);
+		ImGui::Text("FPS: %.2f", ImGui::GetIO().Framerate);
+		ImGui::Text("Screen Size: %ux%u", m_Width, m_Height);
         ImGui::Text("Draw Calls: %u", drawCallCount);
         drawCallCount = 0;
+
+        ImGui::NewLine();
+
+		// Sliders for camera position and rotation
+		ImGui::Text("x: %.2f,     y: %.2f,     z: %.2f", camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
+		ImGui::SliderFloat3("Camera Position", &camera.m_positionX, -30.0f, 30.0f);
+        ImGui::NewLine();
+        ImGui::Text("x: %.2f,     y: %.2f,     z: %.2f", camera.GetRotation().x, camera.GetRotation().y, camera.GetRotation().z);
+		ImGui::SliderFloat3("Camera Rotation", &camera.m_rotationX, -180.0f, 180.0f);
+
+        ImGui::NewLine();
         // Slider for dimension
+		ImGui::Text("Dimension: %.2f", dimension);
         ImGui::SliderFloat("Dimension", &dimension, -10.0f, 10.0f);
 
-
+		// Button to update camera
         if (ImGui::Button("Update Camera"))
         {
             camera.SetPosition(0.0f, 0, -25.0f);
+			camera.SetRotation(0.0f, 0.0f, 0.0f);
+        }
+
+		// Button to reset rotation
+        if (ImGui::Button("Reset"))
+        {
+			rotation = 0.0f;
         }
 
         ImGui::End();
     }
-
 
 
     void InitializeRotationSpeeds()
@@ -809,28 +800,13 @@ public:
         }
     }
 
-
-    void AddCube(ID3D12GraphicsCommandList* cmd, const float position[3], const float rotation[3])
-    {
-        using namespace DirectX;
-
-        XMMATRIX trans = XMMatrixTranslation(position[0], position[1], position[2]);
-        XMMATRIX rot = XMMatrixRotationRollPitchYaw(rotation[0], rotation[1], rotation[2]);
-
-        XMMATRIX world = XMMatrixTranspose(rot * trans);
-
-        cmd->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
-        cmd->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
-        drawCallCount++;
-    }
-
-
+	// Generate cubes in a grid pattern
     void GenerateCubes(ID3D12GraphicsCommandList* cmd)
     {
         rotation += 0.02f;
 
         uint32_t dim = static_cast<uint32_t>(std::cbrt(OBJECT_INSTANCES)); // using cube root to determine the dimension of the grid
-        DirectX::XMFLOAT3 offset = { dimension, dimension, dimension };
+        XMFLOAT3 offset = { dimension, dimension, dimension };
 
         float halfDimOffsetX = (dim * offset.x) / 2.0f;
         float halfDimOffsetY = (dim * offset.y) / 2.0f;
@@ -844,15 +820,19 @@ public:
                 {
                     uint32_t index = x * dim * dim + y * dim + z;
 
-                    float position[3] = {
+
+                    XMFLOAT3 position =
+                    {
                         -halfDimOffsetX + offset.x / 2.0f + x * offset.x,
                         -halfDimOffsetY + offset.y / 2.0f + y * offset.y,
                         -halfDimOffsetZ + offset.z / 2.0f + z * offset.z
                     };
 
-                    float cubeRotation[3] = {
+
+                    XMFLOAT3 cubeRotation =
+                    {
                         rotation * rotationSpeeds[index].x,
-                        -rotation * rotationSpeeds[index].y,
+                        rotation * rotationSpeeds[index].y,
                         rotation * rotationSpeeds[index].z
                     };
 
@@ -860,6 +840,19 @@ public:
                 }
             }
         }
+    }
+
+	// Add a cube to the scene at a specific position and rotation
+    void AddCube(ID3D12GraphicsCommandList* cmd, XMFLOAT3 position, XMFLOAT3 rotation)
+    {
+        XMMATRIX trans = XMMatrixTranslation(position.x, position.y, position.z);
+        XMMATRIX rot = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+
+        XMMATRIX world = XMMatrixTranspose(rot * trans);
+
+        cmd->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
+        cmd->DrawIndexedInstanced(indexBuffer.m_indexCount, 1, 0, 0, 0);
+        drawCallCount++;
     }
 
 
@@ -956,7 +949,14 @@ public:
         viewport = { 0.0f, 0.0f, static_cast<float>(m_Width), static_cast<float>(m_Height), 0.0f, 1.0f };
         scissorRect = { 0, 0, static_cast<long>(m_Width), static_cast<long>(m_Height) };
 
-        CreateCamera();
+
+        // Setup the projection matrix.
+        auto fieldOfView = 3.141592654f / 4.0f;
+        float aspect = static_cast<float>(m_Width) / static_cast<float>(m_Height);
+
+        // Create the projection matrix for 3D rendering.
+        cameraBuffer.projection = DirectX::XMMatrixTranspose(XMMatrixPerspectiveFovLH(fieldOfView, aspect, SCREEN_NEAR, SCREEN_DEPTH));
+
     }
 
 
@@ -1004,11 +1004,6 @@ public:
 };
 
 
-
-
-
-
-
 int main()
 {
     WindowApp win = { 1280u, 720u, L"DX12 RootConstants" };
@@ -1017,25 +1012,12 @@ int main()
     Render render {};
     render.Initialize(win.GetHWND(), win.GetWidth(), win.GetHeight());
 
+	// Set the update and render callbacks
+    win.SetOnUpdate([&render] { render.OnUpdate(); });
+    win.SetOnRender([&render] { render.OnRender(); });
 
-    win.SetOnUpdate([&render]
-        {
-        });
-
-
-
-
-    win.SetOnRender([&render]
-        {
-            render.OnUpdate();
-            render.OnRender();
-        });
-
-
-    win.SetOnResize([&render](UINT w, UINT h)
-        {
-            render.OnResize(w, h);
-        });
+	// Set the resize callback
+    win.SetOnResize([&render](UINT w, UINT h) { render.OnResize(w, h); });
 
 
     win.Run();

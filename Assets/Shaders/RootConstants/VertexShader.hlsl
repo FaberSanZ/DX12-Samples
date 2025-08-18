@@ -1,10 +1,10 @@
-cbuffer MatrrixBuffer : register(b0)
+cbuffer MatrixBuffer : register(b0)
 {
     float4x4 View;
     float4x4 Projection;
 };
 
-cbuffer Constants : register(b1)
+cbuffer RootConstant : register(b1)
 {
     float4x4 World;
 };
