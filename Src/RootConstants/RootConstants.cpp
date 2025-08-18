@@ -1,9 +1,6 @@
 // RootConstants.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-// ImGui.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
@@ -117,17 +114,6 @@ public:
             m_rotationZ = 0.0f;
         }
 
-
-        Camera(const Camera& other)
-        {
-        }
-
-
-        ~Camera()
-        {
-        }
-
-
         void SetPosition(float x, float y, float z)
         {
             m_positionX = x;
@@ -212,11 +198,7 @@ public:
         }
 
 
-        void GetViewMatrix(XMMATRIX& viewMatrix)
-        {
-            viewMatrix = m_viewMatrix;
-            return;
-        }
+        XMMATRIX GetViewMatrix() const { return m_viewMatrix; }
 
 
     };
@@ -263,6 +245,13 @@ public:
 
 	// Camera
     Camera camera {};
+
+
+	// Cube positions and rotation speeds
+    const uint32_t OBJECT_INSTANCES = 255;
+    DirectX::XMFLOAT3 rotationSpeeds[256] = {};
+    float rotation = 0.0f;
+
 
 
     bool Initialize(HWND hwnd, uint32_t width, uint32_t Heigh)
@@ -768,15 +757,7 @@ public:
 
         // Create the projection matrix for 3D rendering.
         cameraBuffer.projection = DirectX::XMMatrixTranspose(XMMatrixPerspectiveFovLH(fieldOfView, aspect, SCREEN_NEAR, SCREEN_DEPTH));
-        //cameraBuffer.projection = (XMMatrixPerspectiveFovLH(fieldOfView, aspect, SCREEN_NEAR, SCREEN_DEPTH));
-
-
-        XMMATRIX viewMatrix;
-
-
-        camera.GetViewMatrix(viewMatrix);
-
-        cameraBuffer.view = DirectX::XMMatrixTranspose(viewMatrix);
+        cameraBuffer.view = DirectX::XMMatrixTranspose(camera.GetViewMatrix());
     }
 
 
@@ -784,18 +765,7 @@ public:
     void OnUpdate()
     {
         camera.Render();
-
-
-
-        XMMATRIX viewMatrix;
-
-
-        camera.GetViewMatrix(viewMatrix);
-
-        cameraBuffer.view = DirectX::XMMatrixTranspose(viewMatrix);
-
-
-    
+        cameraBuffer.view = DirectX::XMMatrixTranspose(camera.GetViewMatrix());
 
 
         void* mappedData = nullptr;
@@ -824,11 +794,6 @@ public:
 
         ImGui::End();
     }
-
-    const uint32_t OBJECT_INSTANCES = 255;
-
-    float rotation = 0.0f;
-    DirectX::XMFLOAT3 rotationSpeeds[256] = {};
 
 
 
