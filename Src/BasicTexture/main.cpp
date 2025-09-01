@@ -724,12 +724,17 @@ public:
         // Set the render target view (RTV) for the current back buffer
         // Set the depth/stencil view (DSV) for the current frame
         commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
-        commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 
         // Clear the render target
         float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
         commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+
+        // Clear the depth/stencil buffer
+        commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+
         commandList->RSSetViewports(1, &viewport);
         commandList->RSSetScissorRects(1, &scissorRect);
 
