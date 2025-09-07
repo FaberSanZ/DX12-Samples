@@ -19,8 +19,8 @@ private:
     class DescriptorHeap
     {
     public:
-        ID3D12DescriptorHeap* m_Heap = nullptr;
-        uint32_t m_DescriptorSize = 0;
+        ID3D12DescriptorHeap* heap_ = nullptr;
+        uint32_t descriptorSize_ = 0;
 
         DescriptorHeap() = default;
 
@@ -31,37 +31,37 @@ private:
             heapDesc.NumDescriptors = numDescriptors;
             heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
             heapDesc.NodeMask = 0;
-            device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_Heap));
-            m_DescriptorSize = device->GetDescriptorHandleIncrementSize(type);
+            device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap_));
+            descriptorSize_ = device->GetDescriptorHandleIncrementSize(type);
         }
 
         D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(uint32_t index) const
         {
             D3D12_CPU_DESCRIPTOR_HANDLE handle = GetCPUDescriptorHandleForHeapStart();
-            handle.ptr += index * m_DescriptorSize;
+            handle.ptr += index * descriptorSize_;
             return handle;
         }
 
         D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandleForHeapStart() const
         {
-            return m_Heap->GetCPUDescriptorHandleForHeapStart();
+            return heap_->GetCPUDescriptorHandleForHeapStart();
         }
         D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandleForHeapStart() const
         {
-            return m_Heap->GetGPUDescriptorHandleForHeapStart();
+            return heap_->GetGPUDescriptorHandleForHeapStart();
         }
 
         uint32_t GetDescriptorSize() const
         {
-            return m_DescriptorSize;
+            return descriptorSize_;
         }
 
         void Destroy()
         {
-            if (m_Heap)
+            if (heap_)
             {
-                m_Heap->Release();
-                m_Heap = nullptr;
+                heap_->Release();
+                heap_ = nullptr;
             }
         }
     };
@@ -69,9 +69,9 @@ private:
 public:
     Render() = default;
 
-    uint32_t m_Width { };
-    uint32_t m_Height { };
-    uint32_t m_FrameCount { 2 };
+    uint32_t width_ { };
+    uint32_t height_ { };
+    uint32_t frameCount_ { 2 };
 
     // Render device and resources
     ID3D12Device* device = nullptr;
@@ -87,8 +87,8 @@ public:
 
     bool Initialize(HWND hwnd, uint32_t width, uint32_t Heigh)
     {
-        m_Width = width;
-        m_Height = Heigh;
+        width_ = width;
+        height_ = Heigh;
         IDXGIFactory4* factory = nullptr;
         CreateDXGIFactory1(IID_PPV_ARGS(&factory));
 
@@ -103,9 +103,9 @@ public:
 
 		// Create swap chain
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-        swapChainDesc.BufferCount = m_FrameCount;
-        swapChainDesc.Width = m_Width;
-        swapChainDesc.Height = m_Height;
+        swapChainDesc.BufferCount = frameCount_;
+        swapChainDesc.Width = width_;
+        swapChainDesc.Height = height_;
         swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -121,9 +121,9 @@ public:
 
 
         // Create RTV descriptor heap
-        rtvDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_FrameCount);
+        rtvDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, frameCount_);
 
-        for (uint32_t i = 0; i < m_FrameCount; ++i)
+        for (uint32_t i = 0; i < frameCount_; ++i)
         {
             ID3D12Resource* backBuffer = nullptr;
             swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer));
