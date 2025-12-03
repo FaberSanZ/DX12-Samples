@@ -11,101 +11,87 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-
-class Render
+class DescriptorHeap
 {
-private:
+public:
+    DescriptorHeap() = default;
 
-    class DescriptorHeap
+    void Initialize(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors)
     {
-    public:
-        ID3D12DescriptorHeap* heap_ = nullptr;
-        uint32_t descriptorSize_ = 0;
+        D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+        heapDesc.Type = type;
+        heapDesc.NumDescriptors = numDescriptors;
+        heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+        heapDesc.NodeMask = 0;
+        device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_Heap));
+        m_DescriptorSize = device->GetDescriptorHandleIncrementSize(type);
+    }
 
-        DescriptorHeap() = default;
+    D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(uint32_t index) const
+    {
+        D3D12_CPU_DESCRIPTOR_HANDLE handle = GetCPUDescriptorHandleForHeapStart();
+        handle.ptr += index * m_DescriptorSize;
+        return handle;
+    }
 
-        void Initialize(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors)
-        {
-            D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-            heapDesc.Type = type;
-            heapDesc.NumDescriptors = numDescriptors;
-            heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-            heapDesc.NodeMask = 0;
-            device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap_));
-            descriptorSize_ = device->GetDescriptorHandleIncrementSize(type);
-        }
+    D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandleForHeapStart() const
+    {
+        return m_Heap->GetCPUDescriptorHandleForHeapStart();
+    }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandleForHeapStart() const
+    {
+        return m_Heap->GetGPUDescriptorHandleForHeapStart();
+    }
 
-        D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(uint32_t index) const
-        {
-            D3D12_CPU_DESCRIPTOR_HANDLE handle = GetCPUDescriptorHandleForHeapStart();
-            handle.ptr += index * descriptorSize_;
-            return handle;
-        }
+    uint32_t GetDescriptorSize() const
+    {
+        return m_DescriptorSize;
+    }
 
-        D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandleForHeapStart() const
+    void Destroy()
+    {
+        if (m_Heap)
         {
-            return heap_->GetCPUDescriptorHandleForHeapStart();
+            m_Heap->Release();
+            m_Heap = nullptr;
         }
-        D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandleForHeapStart() const
-        {
-            return heap_->GetGPUDescriptorHandleForHeapStart();
-        }
+    }
 
-        uint32_t GetDescriptorSize() const
-        {
-            return descriptorSize_;
-        }
 
-        void Destroy()
-        {
-            if (heap_)
-            {
-                heap_->Release();
-                heap_ = nullptr;
-            }
-        }
-    };
+private:
+    ID3D12DescriptorHeap* m_Heap = nullptr;
+    uint32_t m_DescriptorSize = 0;
+};
+
+class RenderSystem
+{
+
 
 public:
-    Render() = default;
-
-    uint32_t width_ { };
-    uint32_t height_ { };
-    uint32_t frameCount_ { 2 };
-
-    // Render device and resources
-    ID3D12Device* device = nullptr;
-    ID3D12CommandQueue* commandQueue = nullptr;
-    IDXGISwapChain3* swapChain = nullptr;
-    ID3D12Resource* renderTargets[2];
-    ID3D12CommandAllocator* commandAlloc = nullptr;
-    ID3D12GraphicsCommandList* commandList = nullptr;
-
-    DescriptorHeap rtvDescriptorHeap {};
-
+    RenderSystem() = default;
 
 
     bool Initialize(HWND hwnd, uint32_t width, uint32_t Heigh)
     {
-        width_ = width;
-        height_ = Heigh;
+        m_Width = width;
+        m_Height = Heigh;
         IDXGIFactory4* factory = nullptr;
         CreateDXGIFactory1(IID_PPV_ARGS(&factory));
 
-        D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device));
+        D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_Device));
 
 
 		// Create command queue
         D3D12_COMMAND_QUEUE_DESC queueDesc = {};
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
+        m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_CommandQueue));
 
 		// Create swap chain
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-        swapChainDesc.BufferCount = frameCount_;
-        swapChainDesc.Width = width_;
-        swapChainDesc.Height = height_;
+        swapChainDesc.BufferCount = m_FrameCount;
+        swapChainDesc.Width = m_Width;
+        swapChainDesc.Height = m_Height;
         swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -113,33 +99,33 @@ public:
         swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
         IDXGISwapChain1* tempSwapChain = nullptr;
-        factory->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &tempSwapChain);
+        factory->CreateSwapChainForHwnd(m_CommandQueue, hwnd, &swapChainDesc, nullptr, nullptr, &tempSwapChain);
 
 
-        tempSwapChain->QueryInterface(IID_PPV_ARGS(&swapChain));
+        tempSwapChain->QueryInterface(IID_PPV_ARGS(&m_SwapChain));
         factory->Release();
 
 
         // Create RTV descriptor heap
-        rtvDescriptorHeap.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, frameCount_);
+        m_RenderTargetViewHeap.Initialize(m_Device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_FrameCount);
 
-        for (uint32_t i = 0; i < frameCount_; ++i)
+        for (uint32_t i = 0; i < m_FrameCount; ++i)
         {
             ID3D12Resource* backBuffer = nullptr;
-            swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer));
+            m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer));
 
 
-            D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap.GetCPUHandle(i);
-            device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
+            D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RenderTargetViewHeap.GetCPUHandle(i);
+            m_Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
 
-            renderTargets[i] = backBuffer;
+            m_RenderTargets[i] = backBuffer;
         }
 
 
-        device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAlloc));
-        device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAlloc, nullptr, IID_PPV_ARGS(&commandList));
+        m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAlloc));
+        m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAlloc, nullptr, IID_PPV_ARGS(&m_CommandList));
 
-        commandList->Close();
+        m_CommandList->Close();
 
         return true;
     }
@@ -149,57 +135,72 @@ public:
     void Loop()
     {
         // get the current back buffer index
-        uint32_t backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+        uint32_t backBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
         // Reset the command allocator and command list for the current frame
-        commandAlloc->Reset();
-        commandList->Reset(commandAlloc, nullptr);
+        m_CommandAlloc->Reset();
+        m_CommandList->Reset(m_CommandAlloc, nullptr);
 
 
 
         // Set the render target view (RTV) for the current back bufferq
-        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap.GetCPUHandle(backBufferIndex);
-        commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RenderTargetViewHeap.GetCPUHandle(backBufferIndex);
+        m_CommandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
 
         // Clear the render target
         float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-        commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+        m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 
-        commandList->Close();
+        m_CommandList->Close();
 
         // Execute the command list
-        ID3D12CommandList* ppCommandLists[] = { commandList };
-        commandQueue->ExecuteCommandLists(1, ppCommandLists);
+        ID3D12CommandList* ppCommandLists[] = { m_CommandList };
+        m_CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 
         // Present the frame
-        swapChain->Present(1, 0);
+        m_SwapChain->Present(1, 0);
     }
 
 
     void Cleanup()
     {
         for (uint32_t i = 0; i < 2; ++i)
-            if (renderTargets[i])
-                renderTargets[i]->Release();
+            if (m_RenderTargets[i])
+                m_RenderTargets[i]->Release();
 
-        rtvDescriptorHeap.Destroy();
+        m_RenderTargetViewHeap.Destroy();
 
-        if (swapChain)
-            swapChain->Release();
+        if (m_SwapChain)
+            m_SwapChain->Release();
 
-        if (commandQueue)
-            commandQueue->Release();
+        if (m_CommandQueue)
+            m_CommandQueue->Release();
 
-        if (device)
-            device->Release();
+        if (m_Device)
+            m_Device->Release();
 
-        if (commandAlloc)
-            commandAlloc->Release();
+        if (m_CommandAlloc)
+            m_CommandAlloc->Release();
 
-        if (commandList)
-            commandList->Release();
+        if (m_CommandList)
+            m_CommandList->Release();
     }
+
+    private:
+        uint32_t m_Width{ };
+        uint32_t m_Height{ };
+        uint32_t m_FrameCount{ 2 };
+
+
+        // Render device and resources
+        ID3D12Device* m_Device = nullptr;
+        ID3D12CommandQueue* m_CommandQueue = nullptr;
+        IDXGISwapChain3* m_SwapChain = nullptr;
+        ID3D12Resource* m_RenderTargets[2];
+        ID3D12CommandAllocator* m_CommandAlloc = nullptr;
+        ID3D12GraphicsCommandList* m_CommandList = nullptr;
+        DescriptorHeap m_RenderTargetViewHeap {};
 
 
 };
@@ -210,19 +211,27 @@ int main()
 	uint32_t height = 820;
     const wchar_t title[] = L"DX12 ClearScreen";
 
-    Render render {};
+    RenderSystem render {};
 
 
 
-    WNDCLASSEX wcex = { sizeof(WNDCLASSEX), CS_CLASSDC, DefWindowProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, title, nullptr };
-    RegisterClassEx(&wcex);
+    WNDCLASS wc = { };
+    wc.lpfnWndProc = [](HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> LRESULT
+    {
+        if (msg == WM_DESTROY)
+            PostQuitMessage(0);
 
-	// Create a window
-    HWND hWnd = CreateWindow(title, title, WS_OVERLAPPEDWINDOW, 100, 100, width, height, nullptr, nullptr, wcex.hInstance, nullptr);
+        return DefWindowProc(hwnd, msg, wparam, lparam);
+    };
 
-    ShowWindow(hWnd, SW_SHOW);
+    wc.lpszClassName = title;
+    wc.hInstance = GetModuleHandle(NULL);
+    RegisterClass(&wc);
+    HWND hwnd = CreateWindow(title, title, WS_OVERLAPPEDWINDOW, 100, 100, width, height, NULL, NULL, wc.hInstance, NULL);
+    ShowWindow(hwnd, SW_SHOW);
 
-    if (!render.Initialize(hWnd, width, height))
+
+    if (!render.Initialize(hwnd, width, height))
     {
         std::cerr << "Error DirectX 12" << std::endl;
         return 1;

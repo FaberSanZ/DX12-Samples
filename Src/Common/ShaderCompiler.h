@@ -20,11 +20,11 @@ namespace Core
 
 		IDxcBlob* Compile(const std::wstring& shaderPath, const std::wstring& entryPoint, const std::wstring& targetProfile)
 		{
-			// Cargar archivo
+		
 			IDxcBlobEncoding* source = nullptr;
 			utils->LoadFile(shaderPath.c_str(), nullptr, &source);
 
-			// Crear include handler
+			
 			IDxcIncludeHandler* includeHandler = nullptr;
 			utils->CreateDefaultIncludeHandler(&includeHandler);
 
@@ -35,7 +35,7 @@ namespace Core
 				L"-E", entryPoint.c_str(),
 				L"-T", targetProfile.c_str(),
 				L"-Zi", L"-Qembed_debug", // Debug info embebida
-				L"-Od" // Sin optimización
+				L"-Od" // not optimization
 			};
 
 

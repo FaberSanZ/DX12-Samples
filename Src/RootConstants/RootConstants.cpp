@@ -112,6 +112,8 @@ public:
             m_rotationX = 0.0f;
             m_rotationY = 0.0f;
             m_rotationZ = 0.0f;
+
+            m_viewMatrix = XMMatrixIdentity();
         }
 
         void SetPosition(float x, float y, float z)
@@ -590,7 +592,7 @@ public:
         // Create vertex buffer
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-        heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN; 
         heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
         heapProps.CreationNodeMask = 1;
         heapProps.VisibleNodeMask = 1;
@@ -704,6 +706,8 @@ public:
         heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
         heapProps.CreationNodeMask = 1;
         heapProps.VisibleNodeMask = 1;
+
+
         D3D12_RESOURCE_DESC bufferDesc = {};
         bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         bufferDesc.Width = constBuffer.m_size;
@@ -751,11 +755,15 @@ public:
 
     void OnRenderGui()
     {
+        uint32_t totaltriangles = drawCallCount * (indexBuffer.m_indexCount / 3);
         ImGui::Begin("Camera Control");
 		ImGui::Text("FPS: %.2f", ImGui::GetIO().Framerate);
 		ImGui::Text("Screen Size: %ux%u", m_Width, m_Height);
         ImGui::Text("Draw Calls: %u", drawCallCount);
+		ImGui::Text("Total Triangles: %u", totaltriangles);
+
         drawCallCount = 0;
+		totaltriangles = 0;
 
         ImGui::NewLine();
 
@@ -915,7 +923,7 @@ public:
         commandQueue->ExecuteCommandLists(1, ppCommandLists);
 
         // Present the frame
-        swapChain->Present(1, 0);
+        swapChain->Present(0, 0);
 
         // Signal and increment the fence value.
         // This will be used to synchronize the GPU and CPU.
@@ -935,7 +943,8 @@ public:
         {
             if (renderTargets[i]) renderTargets[i]->Release();
         }
-        if (depthStencilBuffer) depthStencilBuffer->Release();
+        if (depthStencilBuffer) 
+            depthStencilBuffer->Release();
 
         // Resize swap chain
         swapChain->ResizeBuffers(m_FrameCount, m_Width, m_Height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
