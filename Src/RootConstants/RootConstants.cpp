@@ -267,12 +267,52 @@ public:
 
 
 
+
+    // Obtener la resolución ACTUAL del monitor principal
+    void GetPrimaryMonitorResolution(UINT& width, UINT& height)
+    {
+        IDXGIFactory* factory;
+        CreateDXGIFactory(IID_PPV_ARGS(&factory));
+
+        IDXGIAdapter* adapter;
+        factory->EnumAdapters(0, &adapter);  // Primer adaptador (GPU)
+
+        IDXGIOutput* output;
+        adapter->EnumOutputs(0, &output);    // Primer monitor
+
+        DXGI_OUTPUT_DESC outputDesc;
+        output->GetDesc(&outputDesc);
+
+        // Esto te da la resolución ACTUAL del escritorio
+        width = outputDesc.DesktopCoordinates.right - outputDesc.DesktopCoordinates.left;
+        height = outputDesc.DesktopCoordinates.bottom - outputDesc.DesktopCoordinates.top;
+
+        output->Release();
+        adapter->Release();
+        factory->Release();
+    }
+
+
+
     bool Initialize(HWND hwnd, uint32_t width, uint32_t Heigh)
     {
-		// Set screen width and height
-        m_Width = width;
-        m_Height = Heigh;
 
+        // get 
+        UINT monitorWidth, monitorHeight;
+        GetPrimaryMonitorResolution(monitorWidth, monitorHeight);
+
+
+
+		// Set screen width and height
+        //m_Width = monitorWidth;
+        //m_Height = monitorHeight;
+
+        m_Width = width / 2;
+        m_Height = Heigh / 2;
+
+
+        std::cout << m_Width << std::endl;
+        std::cout << m_Height << std::endl;
 
         viewport = { 0, 0, (float)m_Width, (float)m_Height, 0.0f, 1.0f };
         scissorRect = { 0, 0, (long)m_Width, (long)m_Height };

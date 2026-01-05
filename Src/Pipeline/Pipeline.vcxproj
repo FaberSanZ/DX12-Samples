@@ -152,6 +152,7 @@
     <ClCompile Include="ShaderCompiler.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="ShaderCompiler.h" />
   </ItemGroup>
   <ItemGroup>

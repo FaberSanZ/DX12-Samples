@@ -73,6 +73,7 @@ public:
 
     bool Initialize(HWND hwnd, uint32_t width, uint32_t Heigh)
     {
+
         m_Width = width;
         m_Height = Heigh;
         IDXGIFactory4* factory = nullptr;
@@ -129,6 +130,7 @@ public:
 
         return true;
     }
+
 
 
 
