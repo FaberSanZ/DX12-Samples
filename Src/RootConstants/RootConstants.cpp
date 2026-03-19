@@ -268,22 +268,20 @@ public:
 
 
 
-    // Obtener la resolución ACTUAL del monitor principal
     void GetPrimaryMonitorResolution(UINT& width, UINT& height)
     {
         IDXGIFactory* factory;
         CreateDXGIFactory(IID_PPV_ARGS(&factory));
 
         IDXGIAdapter* adapter;
-        factory->EnumAdapters(0, &adapter);  // Primer adaptador (GPU)
+        factory->EnumAdapters(0, &adapter);  
 
         IDXGIOutput* output;
-        adapter->EnumOutputs(0, &output);    // Primer monitor
+        adapter->EnumOutputs(0, &output);  
 
         DXGI_OUTPUT_DESC outputDesc;
         output->GetDesc(&outputDesc);
 
-        // Esto te da la resolución ACTUAL del escritorio
         width = outputDesc.DesktopCoordinates.right - outputDesc.DesktopCoordinates.left;
         height = outputDesc.DesktopCoordinates.bottom - outputDesc.DesktopCoordinates.top;
 
@@ -302,17 +300,9 @@ public:
         GetPrimaryMonitorResolution(monitorWidth, monitorHeight);
 
 
+        m_Width = width;
+        m_Height = Heigh;
 
-		// Set screen width and height
-        //m_Width = monitorWidth;
-        //m_Height = monitorHeight;
-
-        m_Width = width / 2;
-        m_Height = Heigh / 2;
-
-
-        std::cout << m_Width << std::endl;
-        std::cout << m_Height << std::endl;
 
         viewport = { 0, 0, (float)m_Width, (float)m_Height, 0.0f, 1.0f };
         scissorRect = { 0, 0, (long)m_Width, (long)m_Height };
@@ -963,7 +953,7 @@ public:
         commandQueue->ExecuteCommandLists(1, ppCommandLists);
 
         // Present the frame
-        swapChain->Present(0, 0);
+        swapChain->Present(1, 0);
 
         // Signal and increment the fence value.
         // This will be used to synchronize the GPU and CPU.

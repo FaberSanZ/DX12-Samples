@@ -4,6 +4,7 @@
 #include <wrl/client.h>
 #include <string>
 #include <vector>
+//#include "../packages/Microsoft.Direct3D.DXC.1.9.2602.17/build/native/include/dxcapi.h"
 
 using Microsoft::WRL::ComPtr;
 namespace Core
@@ -54,15 +55,15 @@ namespace Core
 
 
 
-			HRESULT status;
-			result->GetStatus(&status);
-			if (FAILED(status))
-			{
-				IDxcBlobEncoding* errors = nullptr;
-				result->GetErrorBuffer(&errors);
-				OutputDebugStringA((char*)errors->GetBufferPointer());
-				return nullptr;
-			}
+			//HRESULT status;
+			//result->GetStatus(&status);
+			//if (FAILED(status))
+			//{
+			//	IDxcBlobEncoding* errors = nullptr;
+			//	result->GetErrorBuffer(&errors);
+			//	OutputDebugStringA((char*)errors->GetBufferPointer());
+			//	return nullptr;
+			//}
 
 			IDxcBlob* shaderBlob = nullptr;
 			result->GetResult((IDxcBlob**)&shaderBlob);

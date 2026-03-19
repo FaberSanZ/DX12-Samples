@@ -4,27 +4,23 @@
 #include <string>
 #include <vector>
 #include <dxcapi.h>
+#include <d3dcommon.h>
 
 using Microsoft::WRL::ComPtr;
 namespace Core
 {
-	class ShaderCompilerDXC
+	class ShaderCompiler
 	{
 	public:
-		ShaderCompilerDXC()
+		ShaderCompiler()
 		{
-			DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler));
-			DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&library));
-			DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&utils));
+
 		}
 
-		IDxcBlob* Compile(const std::wstring& shaderPath, const std::wstring& entryPoint, const std::wstring& targetProfile);
+		ID3DBlob* Compile(const WCHAR* filename, const WCHAR* targetString);
 
 	private:
-		IDxcCompiler* compiler = nullptr;
-		IDxcLibrary* library = nullptr;
-		IDxcUtils* utils = nullptr;
-		//IDxcOperationResult* result = nullptr;
+
 
 	};
 
