@@ -2,12 +2,12 @@
 
             
 
-# 🌀 DirectX 12 Ultimate® Samples
+# 🌀 DirectX Ray Tracing Ultimate® Samples
 
 </br>
 
-📝This repository contains **small, progressive DirectX 12 examples**, designed to teach and demonstrate each part of the graphics pipeline in an intuitive and minimalistic way.  
-Each sample is isolated and focused, making it easy to learn DX12 step by step, without unnecessary complexity.
+📝This repository contains **small, progressive DirectX Ray Tracing examples**, designed to teach and demonstrate each part of the graphics pipeline in an intuitive and minimalistic way.  
+Each sample is isolated and focused, making it easy to learn DirectX Ray Tracing step by step, without unnecessary complexity.
 
 </br>
 
@@ -34,7 +34,7 @@ Example | Details
 
 ## 📘 Goals
 
-- Help others learn how to use **pure DirectX 12**.
+- Help others learn how to use **pure DirectX Ray Tracing**.
 - Serve as a personal reference for building engines or tools.
 - Keep things clean, readable, and low-level.
 
@@ -42,4 +42,4 @@ Example | Details
 
 - Windows 10/11
 - Visual Studio 2019 or newer
-- DirectX 12 compatible GPU
+- DirectX Ray Tracing compatible GPU
