@@ -1,10 +1,20 @@
-#include "ShaderCompiler.h"
-//#include <dxcapi.h>
-#include <dxcapi.h>
+#pragma once
 
-namespace Core
+#include <wrl/client.h>
+#include <string>
+#include <vector>
+#include <dxcapi.h>
+#include <d3dcommon.h>
+
+class ShaderCompiler
 {
-    ID3DBlob* ShaderCompiler::Compile(const WCHAR* filename, const WCHAR* targetString)
+public:
+    ShaderCompiler()
+    {
+
+    }
+
+    ID3DBlob* Compile(const WCHAR* filename, const WCHAR* targetString)
     {
         IDxcCompiler* pCompiler = nullptr;
         IDxcLibrary* pLibrary = nullptr;
@@ -60,4 +70,11 @@ namespace Core
 
         return reinterpret_cast<ID3DBlob*>(pBlob);
     }
-}
+
+private:
+
+
+};
+
+
+
