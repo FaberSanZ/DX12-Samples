@@ -1,80 +1,79 @@
 #pragma once
 
-#include <dxcapi.h>
 #include <wrl/client.h>
 #include <string>
 #include <vector>
-//#include "../packages/Microsoft.Direct3D.DXC.1.9.2602.17/build/native/include/dxcapi.h"
+#include <dxcapi.h>
+#include <d3dcommon.h>
 
-using Microsoft::WRL::ComPtr;
-namespace Core
+class ShaderCompiler
 {
-	class ShaderCompilerDXC
-	{
-	public:
-		ShaderCompilerDXC()
-		{
-			DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler));
-			DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&library));
-			DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&utils));
-		}
+public:
+    ShaderCompiler()
+    {
 
-		IDxcBlob* Compile(const std::wstring& shaderPath, const std::wstring& entryPoint, const std::wstring& targetProfile)
-		{
-		
-			IDxcBlobEncoding* source = nullptr;
-			utils->LoadFile(shaderPath.c_str(), nullptr, &source);
+    }
 
-			
-			IDxcIncludeHandler* includeHandler = nullptr;
-			utils->CreateDefaultIncludeHandler(&includeHandler);
+    ID3DBlob* Compile(const WCHAR* filename, const WCHAR* targetString)
+    {
+        IDxcCompiler* pCompiler = nullptr;
+        IDxcLibrary* pLibrary = nullptr;
 
-			// Argumentos básicos
-			LPCWSTR args[] =
-			{
-				shaderPath.c_str(),
-				L"-E", entryPoint.c_str(),
-				L"-T", targetProfile.c_str(),
-				L"-Zi", L"-Qembed_debug", // Debug info embebida
-				L"-Od" // not optimization
-			};
+        DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler));
+        DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&pLibrary));
 
+        IDxcBlobEncoding* pTextBlob = nullptr;
+        HRESULT hr = pLibrary->CreateBlobFromFile(filename, nullptr, &pTextBlob);
 
-			// Compilar
-			ComPtr<IDxcOperationResult> result;
-			HRESULT hr = compiler->Compile(
-				source,
-				shaderPath.c_str(),
-				entryPoint.c_str(),
-				targetProfile.c_str(),
-				args, _countof(args),
-				nullptr, 0,
-				includeHandler,
-				&result
-			);
+        if (FAILED(hr))
+        {
+            OutputDebugStringA("Error\n");
+            return nullptr;
+        }
 
+        IDxcIncludeHandler* pIncludeHandler = nullptr;
+        pLibrary->CreateIncludeHandler(&pIncludeHandler);
 
+        IDxcOperationResult* pResult = nullptr;
 
-			//HRESULT status;
-			//result->GetStatus(&status);
-			//if (FAILED(status))
-			//{
-			//	IDxcBlobEncoding* errors = nullptr;
-			//	result->GetErrorBuffer(&errors);
-			//	OutputDebugStringA((char*)errors->GetBufferPointer());
-			//	return nullptr;
-			//}
+        pCompiler->Compile(
+            pTextBlob,
+            filename,
+            L"",
+            targetString,
+            nullptr,
+            0,
+            nullptr,
+            0,
+            pIncludeHandler,
+            &pResult
+        );
 
-			IDxcBlob* shaderBlob = nullptr;
-			result->GetResult((IDxcBlob**)&shaderBlob);
-			return shaderBlob;
-		}
+        HRESULT resultCode;
+        pResult->GetStatus(&resultCode);
 
-	private:
-		IDxcCompiler* compiler = nullptr;
-		IDxcLibrary* library = nullptr;
-		IDxcUtils* utils = nullptr;
-	};
+        if (FAILED(resultCode))
+        {
+            IDxcBlobEncoding* pErrors;
+            pResult->GetErrorBuffer(&pErrors);
+
+            if (pErrors)
+            {
+                OutputDebugStringA((char*)pErrors->GetBufferPointer());
+            }
+
+            return nullptr;
+        }
+
+        IDxcBlob* pBlob = nullptr;
+        pResult->GetResult(&pBlob);
+
+        return reinterpret_cast<ID3DBlob*>(pBlob);
+    }
+
+private:
 
 
-}
+};
+
+
